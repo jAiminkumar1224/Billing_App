@@ -1,0 +1,1130 @@
+import 'package:billing_app/database/database_helper.dart';
+import 'package:flutter/material.dart';
+import '../services/pdf_service.dart';
+import 'package:flutter/services.dart';
+
+import 'login_screen.dart';
+import 'data_screen.dart';
+
+class BillScreen extends StatefulWidget {
+  const BillScreen({super.key});
+
+  @override
+  State<BillScreen> createState() => _BillScreenState();
+}
+
+class AppDrawer extends StatelessWidget {
+  const AppDrawer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: Column(
+        children: [
+          const DrawerHeader(
+            decoration: BoxDecoration(color: Color(0xFF1E3A8A)),
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: Text(
+                'Navigation Menu',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+            ),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.receipt_long),
+            title: const Text('Billing Screen'),
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const BillScreen()),
+              );
+            },
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.storage),
+            title: const Text('Data Screen'),
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const DataScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ------------------
+/// Bill Item Model
+/// ------------------
+class BillItem {
+  final nameController = TextEditingController();
+  final uomController = TextEditingController();
+  final qtyController = TextEditingController(text: '1');
+  final rateController = TextEditingController(text: '0');
+
+  double get amount {
+    final qty = int.tryParse(qtyController.text) ?? 0;
+    final rate = double.tryParse(rateController.text) ?? 0;
+    return qty * rate;
+  }
+
+  void clear() {
+    nameController.clear();
+    uomController.clear();
+    qtyController.text = '1';
+    rateController.text = '0';
+  }
+}
+
+class _BillScreenState extends State<BillScreen> {
+  final invoiceNoController = TextEditingController();
+  DateTime? invoiceDate;
+
+  final stateController = TextEditingController();
+  final stateCodeController = TextEditingController();
+  final receiverStateCodeController = TextEditingController();
+  final receiverNameController = TextEditingController();
+  final receiverAddressController = TextEditingController();
+  final receiverGstinController = TextEditingController();
+  final receiverStateController = TextEditingController();
+  late final ScrollController _itemScrollController;
+
+  String lastInvoiceNo = "";
+  final FocusNode invoiceFocus = FocusNode();
+  bool showLastInvoice = true;
+
+  bool isSaved = false;
+  String paymentStatus = "Pending";
+  int? savedInvoiceId;
+
+  final poNumberController = TextEditingController();
+  DateTime? poDate;
+
+  final discountController = TextEditingController(text: '0');
+
+  final List<BillItem> items = [];
+
+  double get subTotal => items.fold(0, (sum, item) => sum + item.amount);
+
+  double get discountAmount {
+    double percent = double.tryParse(discountController.text) ?? 0;
+
+    if (percent < 0) percent = 0;
+
+    return subTotal * percent / 100;
+  }
+
+  double get netTotal => subTotal - discountAmount;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _itemScrollController = ScrollController();
+
+    loadLastInvoice();
+
+    invoiceNoController.addListener(() {
+      if (invoiceNoController.text.isEmpty) {
+        setState(() {
+          showLastInvoice = true;
+        });
+      } else {
+        setState(() {
+          showLastInvoice = false;
+        });
+      }
+    });
+  }
+
+  Future<void> loadLastInvoice() async {
+    final db = await DatabaseHelper.instance.database;
+
+    final result = await db.rawQuery(
+      "SELECT invoiceNo FROM invoices ORDER BY id DESC LIMIT 1",
+    );
+
+    if (result.isNotEmpty) {
+      setState(() {
+        lastInvoiceNo = result.first['invoiceNo'].toString();
+        showLastInvoice = true;
+      });
+    }
+  }
+
+  Future<int> insertInvoice(Map<String, dynamic> row) async {
+    final db = await DatabaseHelper.instance.database;
+    return await db.insert('invoices', row);
+  }
+
+  Future<bool> isInvoiceExists(String invoiceNo) async {
+    final db = await DatabaseHelper.instance.database;
+
+    final result = await db.query(
+      'invoices',
+      where: 'invoiceNo = ?',
+      whereArgs: [invoiceNo],
+    );
+
+    return result.isNotEmpty;
+  }
+
+  Future<void> saveBillToDatabase() async {
+    if (items.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Add at least one item")));
+      return;
+    }
+
+    if (invoiceNoController.text.isEmpty || invoiceDate == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Fill required fields")));
+      return;
+    }
+
+    final db = await DatabaseHelper.instance.database;
+
+    bool exists = await isInvoiceExists(invoiceNoController.text);
+
+    if (exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Invoice Number already exists"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    /// 🔥 INSERT INVOICE
+    savedInvoiceId = await db.insert('invoices', {
+      'invoiceNo': invoiceNoController.text,
+      'invoiceDate': invoiceDate!.toIso8601String(),
+      'receiverName': receiverNameController.text,
+      'receiverAddress': receiverAddressController.text,
+      'subtotal': subTotal,
+      'discount': discountAmount,
+      'netTotal': netTotal,
+      'paymentStatus': paymentStatus,
+    });
+
+    /// 🔥 INSERT ITEMS
+    for (var item in items) {
+      await db.insert('invoice_items', {
+        'invoiceId': savedInvoiceId,
+        'itemName': item.nameController.text,
+        'qty': int.tryParse(item.qtyController.text) ?? 0,
+        'rate': double.tryParse(item.rateController.text) ?? 0,
+        'amount': item.amount,
+      });
+    }
+
+    isSaved = true;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Bill Saved Successfully")));
+  }
+
+  Future<bool> askSaveBeforePrint() async {
+    if (isSaved) return true;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Save Bill"),
+        content: const Text("You must save bill before printing"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await saveBillToDatabase();
+              Navigator.pop(context, true);
+            },
+            child: const Text("SAVE"),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
+  }
+
+  Future<void> pickDate(bool isInvoice) async {
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      setState(() {
+        isInvoice ? invoiceDate = picked : poDate = picked;
+      });
+    }
+  }
+
+  void addItem() {
+    setState(() {
+      items.add(BillItem());
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_itemScrollController.hasClients) {
+        _itemScrollController.animateTo(
+          _itemScrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void removeItem(int index) => setState(() => items.removeAt(index));
+
+  void resetAll() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirm Reset'),
+        content: const Text('Are you sure you want to reset all bill details?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 224, 66, 66),
+            ),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() {
+      invoiceNoController.clear();
+      invoiceDate = null;
+      stateController.clear();
+      stateCodeController.clear();
+      receiverNameController.clear();
+      receiverAddressController.clear();
+      receiverGstinController.clear();
+      receiverStateController.clear();
+      poNumberController.clear();
+      poDate = null;
+      discountController.text = '0';
+
+      for (final item in items) {
+        item.clear();
+      }
+      items.clear();
+    });
+  }
+
+  void logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirm Logout'),
+        content: const Text(
+          'Are you sure you want to logout?\nUnsaved data will be lost.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  Future<void> printBill() async {
+    bool canPrint = await askSaveBeforePrint();
+    if (!canPrint) return;
+
+    for (int i = 0; i < items.length; i++) {
+      if (items[i].nameController.text.trim().isEmpty ||
+          items[i].qtyController.text.trim().isEmpty ||
+          items[i].rateController.text.trim().isEmpty) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Incomplete Item'),
+            content: Text(
+              'Item ${i + 1} is empty.\nPlease fill or delete this item.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    }
+    if (invoiceNoController.text.isEmpty ||
+        invoiceDate == null ||
+        stateController.text.isEmpty ||
+        stateCodeController.text.isEmpty ||
+        receiverNameController.text.isEmpty ||
+        receiverAddressController.text.isEmpty ||
+        receiverGstinController.text.isEmpty ||
+        receiverStateController.text.isEmpty ||
+        receiverStateCodeController.text.isEmpty ||
+        poNumberController.text.isEmpty ||
+        poDate == null ||
+        items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all mandatory fields')),
+      );
+      return;
+    }
+
+    PdfService().printBill(
+      invoiceNo: invoiceNoController.text,
+      invoiceDate: invoiceDate!,
+      state: stateController.text,
+      stateCode: stateCodeController.text,
+      receiverName: receiverNameController.text,
+      receiverAddress: receiverAddressController.text,
+      receiverGstin: receiverGstinController.text,
+      poNumber: poNumberController.text,
+      poDate: poDate!,
+      receiverStateCode: receiverStateCodeController.text,
+      items: items,
+      subTotal: subTotal,
+      discountAmount: discountAmount,
+      discountPercentText: discountController.text,
+      netTotal: netTotal,
+    );
+
+    await insertInvoice({
+      'invoiceNo': invoiceNoController.text,
+      'invoiceDate': invoiceDate!.toIso8601String(),
+      'receiverName': receiverNameController.text,
+      'receiverAddress': receiverAddressController.text,
+      'subtotal': subTotal,
+      'discount': discountAmount,
+      'netTotal': netTotal,
+      'paymentStatus': "Paid",
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      drawer: const AppDrawer(),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1E3A8A), // 🔥 ADD THIS
+        foregroundColor: Colors.white,
+        title: const Text('Billing Screen'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: saveBillToDatabase,
+            child: const Text('SAVE', style: TextStyle(color: Colors.green)),
+          ),
+          TextButton(
+            onPressed: printBill,
+            child: const Text('PRINT', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+
+      /// MAIN BODY
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            /// HEADER (NO SCROLL)
+            buildHeaderInputs(),
+            const SizedBox(height: 16),
+            buildItemHeader(),
+            const Divider(),
+
+            /// MAIN CONTENT
+            Expanded(
+              child: Stack(
+                children: [
+                  /// ITEMS LIST (ONLY THIS SCROLLS)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      right: 340,
+                    ), // space for summary
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            controller: _itemScrollController, // ✅ ATTACHED
+                            child: buildItemList(),
+                          ),
+                        ),
+
+                        buildAddItemButton(),
+                      ],
+                    ),
+                  ),
+
+                  /// SUMMARY BOX (FIXED BOTTOM RIGHT)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [buildPaymentStatus(), buildSummary()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      ///  FOOTER BAR
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              // ignore: deprecated_member_use
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 6,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            /// RESET BUTTON
+            SizedBox(
+              width: 140,
+              height: 44,
+              child: ElevatedButton.icon(
+                onPressed: resetAll,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Reset'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E3A8A), // Deep Blue
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            /// LOGOUT BUTTON
+            SizedBox(
+              width: 140,
+              height: 44,
+              child: ElevatedButton.icon(
+                onPressed: logout,
+                icon: const Icon(Icons.logout, size: 18),
+                label: const Text('Logout'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFDC2626), // Soft Red
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildHeaderInputs() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: TextField(
+                  controller: invoiceNoController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+
+                    label: const Text.rich(
+                      TextSpan(
+                        text: 'Invoice No',
+                        children: [
+                          TextSpan(
+                            text: '*',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    suffixText: showLastInvoice && lastInvoiceNo.isNotEmpty
+                        ? "Last Saved Bill No : $lastInvoiceNo"
+                        : null,
+
+                    suffixStyle: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: dateRow(
+                'Invoice Date*',
+                invoiceDate,
+                () => pickDate(true),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: rowInput(
+                'State*',
+                stateController,
+                allowOnlyLetters: true,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: rowInput(
+                'State Code*',
+                stateCodeController,
+                isNumericOnly: true,
+              ),
+            ),
+          ],
+        ),
+        const Divider(),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  rowInput('Receiver Name*', receiverNameController),
+                  rowInput('Receiver Address*', receiverAddressController),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                children: [
+                  rowInput(
+                    'GSTIN/UIN*',
+                    receiverGstinController,
+                    alphaNumericOnly: true,
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: rowInput(
+                          'Receiver State*',
+                          receiverStateController,
+                          allowOnlyLetters: true,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: rowInput(
+                          'Receiver State Code*',
+                          receiverStateCodeController,
+                          isNumericOnly: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        const Divider(),
+        Row(
+          children: [
+            Expanded(
+              child: rowInput(
+                'PO Number*',
+                poNumberController,
+                alphaNumericOnly: true,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: dateRow('PO Date*', poDate, () => pickDate(false)),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget rowInput(
+    String label,
+    TextEditingController controller, {
+    bool isNumericOnly = false,
+    bool allowOnlyLetters = false,
+    bool alphaNumericOnly = false,
+    bool checkInvoice = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: TextField(
+        controller: controller,
+        keyboardType: isNumericOnly ? TextInputType.number : TextInputType.text,
+        inputFormatters: isNumericOnly
+            ? [FilteringTextInputFormatter.digitsOnly]
+            : allowOnlyLetters
+            ? [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]'))]
+            : alphaNumericOnly
+            ? [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))]
+            : null,
+
+        onChanged: (value) async {
+          if (checkInvoice && value.length > 1) {
+            bool exists = await isInvoiceExists(value);
+
+            if (exists) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("⚠ Invoice Number already exists"),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          isDense: true,
+          label: RichText(
+            text: TextSpan(
+              text: label.replaceAll('*', ''),
+              style: const TextStyle(color: Colors.black),
+              children: label.contains('*')
+                  ? const [
+                      TextSpan(
+                        text: '*',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ]
+                  : [],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget dateRow(String label, DateTime? date, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: InkWell(
+        onTap: onTap,
+        child: InputDecorator(
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            isDense: true,
+
+            label: RichText(
+              text: TextSpan(
+                text: label.replaceAll('*', ''),
+                style: const TextStyle(color: Colors.black),
+                children: label.contains('*')
+                    ? const [
+                        TextSpan(
+                          text: '*',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ]
+                    : [],
+              ),
+            ),
+          ),
+          child: Text(
+            date == null
+                ? 'Select Date'
+                : '${date.day}/${date.month}/${date.year}',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildItemHeader() {
+    return Padding(
+      padding: const EdgeInsets.only(
+        bottom: 6,
+        right: 340, // ✅ SAME SPACE AS ITEM LIST (FOR SUMMARY BOX)
+      ),
+      child: Row(
+        children: const [
+          SizedBox(
+            width: 60,
+            child: Center(
+              child: Text(
+                'Sr. No.',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+          SizedBox(width: 6),
+
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: Text(
+                'Item',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+          SizedBox(width: 6),
+
+          Expanded(
+            child: Center(
+              child: Text('UOM', style: TextStyle(fontWeight: FontWeight.w600)),
+            ),
+          ),
+          SizedBox(width: 6),
+
+          Expanded(
+            child: Center(
+              child: Text('Qty', style: TextStyle(fontWeight: FontWeight.w600)),
+            ),
+          ),
+          SizedBox(width: 6),
+
+          Expanded(
+            child: Center(
+              child: Text(
+                'Rate',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+          SizedBox(width: 6),
+
+          Expanded(
+            child: Center(
+              child: Text(
+                'Amount',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+
+          SizedBox(
+            width: 48,
+            child: Center(
+              child: Text(
+                'Delete\nItem',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildItemList() {
+    return Column(
+      children: List.generate(items.length, (index) {
+        final item = items[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 60,
+                child: TextField(
+                  readOnly: true,
+                  controller: TextEditingController(text: '${index + 1}'),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                    filled: true,
+                    fillColor: Color(0xFFF0F0F0), // light readonly shade
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+              const SizedBox(width: 6),
+
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: item.nameController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: TextField(
+                  controller: item.uomController, // ✅ NEW
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+
+              Expanded(
+                child: TextField(
+                  controller: item.qtyController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: TextField(
+                  controller: item.rateController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
+                  ],
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(child: Text(item.amount.toStringAsFixed(2))),
+              IconButton(
+                onPressed: () => removeItem(index),
+                icon: const Icon(Icons.delete, color: Colors.red),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget buildAddItemButton() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ElevatedButton.icon(
+        onPressed: addItem,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Item'),
+      ),
+    );
+  }
+
+  Widget buildPaymentStatus() {
+    return Container(
+      width: 250,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          const Text("Payment:", style: TextStyle(fontWeight: FontWeight.w600)),
+
+          const SizedBox(width: 10),
+
+          Radio<String>(
+            value: "Pending",
+            groupValue: paymentStatus,
+            onChanged: (value) {
+              setState(() {
+                paymentStatus = value!;
+              });
+            },
+          ),
+          const Text("Pending"),
+
+          const SizedBox(width: 10),
+
+          Radio<String>(
+            value: "Paid",
+            groupValue: paymentStatus,
+            onChanged: (value) {
+              setState(() {
+                paymentStatus = value!;
+              });
+            },
+          ),
+          const Text("Paid"),
+        ],
+      ),
+    );
+  }
+
+  Widget buildSummary() {
+    return Align(
+      alignment: Alignment.bottomRight,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 15, bottom: 15),
+        child: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.white,
+          child: Container(
+            width: 300,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                summaryRow('Sub Total', subTotal),
+
+                const SizedBox(height: 8),
+
+                Row(
+                  children: [
+                    const Expanded(child: Text('Discount (%)')),
+                    SizedBox(
+                      width: 80,
+                      child: TextField(
+                        controller: discountController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d*\.?\d*$'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          double discount = double.tryParse(value) ?? 0;
+
+                          if (discount < 0) {
+                            discountController.text = "0";
+                            discountController.selection =
+                                TextSelection.fromPosition(
+                                  TextPosition(
+                                    offset: discountController.text.length,
+                                  ),
+                                );
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Discount cannot be negative"),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                summaryRow('Discount Amount', discountAmount),
+
+                const Divider(height: 20),
+
+                summaryRow('Net Total', netTotal, isBold: true),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget summaryRow(String label, double value, {bool isBold = false}) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: isBold ? const TextStyle(fontWeight: FontWeight.bold) : null,
+          ),
+        ),
+        Text(
+          value.toStringAsFixed(2),
+          style: isBold ? const TextStyle(fontWeight: FontWeight.bold) : null,
+        ),
+      ],
+    );
+  }
+}
