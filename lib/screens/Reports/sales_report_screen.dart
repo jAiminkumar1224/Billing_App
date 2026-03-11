@@ -19,7 +19,8 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
   DateTime? startDate;
   DateTime? endDate;
 
-  String filterTitle = "All Sales";
+  bool isFilterActive = false;
+  String filterTitle = "Total Sales";
 
   @override
   void initState() {
@@ -27,7 +28,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
     loadSales();
   }
 
-  /// ================= DATE FORMAT =================
+  /// DATE FORMAT
   String formatDate(String date) {
     DateTime d = DateTime.parse(date);
 
@@ -36,11 +37,10 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
         "${d.year}";
   }
 
-  /// ================= LOAD SALES =================
+  /// LOAD SALES
   Future<void> loadSales() async {
     final db = await DatabaseHelper.instance.database;
 
-    /// ONLY PAID BILLS
     final data = await db.query(
       'invoices',
       where: "paymentStatus = ?",
@@ -48,42 +48,32 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
       orderBy: "id DESC",
     );
 
-    final total = await db.rawQuery(
-      "SELECT SUM(netTotal) as total FROM invoices WHERE paymentStatus = 'Paid'",
-    );
+    updateList(data);
 
     setState(() {
-      salesList = data;
-
-      totalSales = total.first["total"] == null
-          ? 0
-          : (total.first["total"] as num).toDouble();
-
-      totalBills = data.length;
-
+      isFilterActive = false;
+      filterTitle = "All Sales";
       startDate = null;
       endDate = null;
-
-      filterTitle = "All Sales";
     });
   }
 
-  /// ================= GET ITEMS =================
-  Future<String> getItems(int invoiceId) async {
-    final db = await DatabaseHelper.instance.database;
+  /// UPDATE LIST
+  void updateList(List<Map<String, dynamic>> data) {
+    double total = 0;
 
-    final items = await db.query(
-      "invoice_items",
-      where: "invoiceId = ?",
-      whereArgs: [invoiceId],
-    );
+    for (var i in data) {
+      total += (i["netTotal"] as num).toDouble();
+    }
 
-    if (items.isEmpty) return "";
-
-    return items.map((e) => e["itemName"]).join("\n");
+    setState(() {
+      salesList = data;
+      totalSales = total;
+      totalBills = data.length;
+    });
   }
 
-  /// ================= SEARCH =================
+  /// SEARCH
   Future<void> searchSales(String value) async {
     final db = await DatabaseHelper.instance.database;
 
@@ -95,7 +85,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
     final data = await db.query(
       "invoices",
       where:
-          "paymentStatus = 'Paid' AND (invoiceNo LIKE ? OR receiverName LIKE ?)",
+          "paymentStatus='Paid' AND (invoiceNo LIKE ? OR receiverName LIKE ?)",
       whereArgs: ["%$value%", "%$value%"],
       orderBy: "id DESC",
     );
@@ -103,7 +93,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
     updateList(data);
   }
 
-  /// ================= WEEKLY =================
+  /// WEEKLY
   Future<void> loadWeekly() async {
     final db = await DatabaseHelper.instance.database;
 
@@ -121,15 +111,17 @@ ORDER BY id DESC
       [monday.toIso8601String(), sunday.toIso8601String()],
     );
 
-    startDate = monday;
-    endDate = sunday;
-
-    filterTitle = "Current Week";
+    setState(() {
+      startDate = monday;
+      endDate = sunday;
+      filterTitle = "This Week’s Sales";
+      isFilterActive = true;
+    });
 
     updateList(data);
   }
 
-  /// ================= MONTHLY =================
+  /// MONTHLY
   Future<void> loadMonthly() async {
     final db = await DatabaseHelper.instance.database;
 
@@ -148,15 +140,17 @@ ORDER BY id DESC
       [firstDay.toIso8601String(), lastDay.toIso8601String()],
     );
 
-    startDate = firstDay;
-    endDate = lastDay;
-
-    filterTitle = "Current Month";
+    setState(() {
+      startDate = firstDay;
+      endDate = lastDay;
+      filterTitle = "This Month’s Sales";
+      isFilterActive = true;
+    });
 
     updateList(data);
   }
 
-  /// ================= YEARLY =================
+  /// YEARLY
   Future<void> loadYearly() async {
     final db = await DatabaseHelper.instance.database;
 
@@ -175,89 +169,158 @@ ORDER BY id DESC
       [firstDay.toIso8601String(), lastDay.toIso8601String()],
     );
 
-    startDate = firstDay;
-    endDate = lastDay;
-
-    filterTitle = "Current Year";
+    setState(() {
+      startDate = firstDay;
+      endDate = lastDay;
+      filterTitle = "This Year’s Sales";
+      isFilterActive = true;
+    });
 
     updateList(data);
   }
 
-  /// ================= CUSTOM =================
-  Future<void> loadCustom() async {
-    if (startDate == null || endDate == null) return;
+  /// CUSTOM DATE RANGE
+  /// CUSTOM DATE RANGE POPUP
+  Future<void> openDateRangePopup() async {
+    DateTime? tempStart = startDate;
+    DateTime? tempEnd = endDate;
 
-    final db = await DatabaseHelper.instance.database;
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          contentPadding: const EdgeInsets.all(12),
 
-    final data = await db.rawQuery(
-      """
+          content: StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return SizedBox(
+                width: 400,
+                height: 420,
+
+                child: Column(
+                  children: [
+                    /// HEADER
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Select Range",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    /// SELECTED RANGE TEXT
+                    Text(
+                      tempStart == null
+                          ? "Start Date - End Date"
+                          : "${showDate(tempStart!)} → ${tempEnd == null ? '' : showDate(tempEnd!)}",
+                      style: const TextStyle(fontSize: 16),
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    /// CALENDAR
+                    Expanded(
+                      child: CalendarDatePicker(
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+
+                        onDateChanged: (date) {
+                          setStateDialog(() {
+                            if (tempStart == null) {
+                              tempStart = date;
+                            } else if (tempEnd == null) {
+                              tempEnd = date;
+
+                              if (tempEnd!.isBefore(tempStart!)) {
+                                final t = tempStart;
+                                tempStart = tempEnd;
+                                tempEnd = t;
+                              }
+                            } else {
+                              tempStart = date;
+                              tempEnd = null;
+                            }
+                          });
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    /// SAVE BUTTON
+                    SizedBox(
+                      width: double.infinity,
+
+                      child: ElevatedButton(
+                        child: const Text("Save"),
+
+                        onPressed: () async {
+                          if (tempStart != null && tempEnd != null) {
+                            startDate = tempStart;
+                            endDate = tempEnd;
+
+                            final db = await DatabaseHelper.instance.database;
+
+                            final data = await db.rawQuery(
+                              """
 SELECT * FROM invoices
 WHERE paymentStatus='Paid'
 AND date(invoiceDate) BETWEEN date(?) AND date(?)
 ORDER BY id DESC
 """,
-      [startDate!.toIso8601String(), endDate!.toIso8601String()],
+                              [
+                                startDate!.toIso8601String(),
+                                endDate!.toIso8601String(),
+                              ],
+                            );
+
+                            setState(() {
+                              filterTitle = "Sales for Selected Period";
+                              isFilterActive = true;
+                            });
+
+                            updateList(data);
+
+                            Navigator.pop(context);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
-
-    filterTitle = "Custom Range";
-
-    updateList(data);
   }
 
-  /// ================= UPDATE LIST =================
-  void updateList(List<Map<String, dynamic>> data) {
-    double total = 0;
-
-    for (var i in data) {
-      total += (i["netTotal"] as num).toDouble();
-    }
-
-    setState(() {
-      salesList = data;
-      totalSales = total;
-      totalBills = data.length;
-    });
-  }
-
-  /// ================= DATE PICKERS =================
-  Future<void> pickStartDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      helpText: "Select Start Date",
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-      initialDate: DateTime.now(),
-    );
-
-    if (picked != null) {
-      setState(() {
-        startDate = picked;
-      });
-    }
-  }
-
-  Future<void> pickEndDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      helpText: "Select End Date",
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-      initialDate: DateTime.now(),
-    );
-
-    if (picked != null) {
-      setState(() {
-        endDate = picked;
-      });
-    }
-  }
-
-  /// ================= CLEAR FILTER =================
+  /// CLEAR FILTER
   void clearFilter() {
-    startDate = null;
-    endDate = null;
-
     loadSales();
+  }
+
+  /// DATE FORMATTER
+  String showDate(DateTime date) {
+    return "${date.day.toString().padLeft(2, '0')}/"
+        "${date.month.toString().padLeft(2, '0')}/"
+        "${date.year}";
   }
 
   @override
@@ -267,18 +330,91 @@ ORDER BY id DESC
 
       body: Column(
         children: [
-
           /// TOTAL SALES
+          /// SALES SUMMARY CARD
           Container(
+            width: double.infinity,
+            margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(16),
-            child: Text(
-              "Total Sales : ₹ $totalSales",
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// TITLE
+                Text(
+                  filterTitle,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey,
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                /// SALES AMOUNT
+                Text(
+                  "₹ ${totalSales.toStringAsFixed(2)}",
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                /// TOTAL BILLS
+                Text(
+                  "$totalBills Bills",
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
             ),
           ),
+
+          /// FILTER BAR
+          if (isFilterActive && startDate != null && endDate != null)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, color: Colors.blue),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: Text(
+                      "$filterTitle : ${showDate(startDate!)} → ${showDate(endDate!)}",
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+
+                  GestureDetector(
+                    onTap: clearFilter,
+                    child: const Icon(Icons.close, color: Colors.red),
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 10),
 
           /// SEARCH
           Padding(
@@ -307,28 +443,30 @@ ORDER BY id DESC
                     child: const Text("Weekly"),
                   ),
                 ),
+
                 const SizedBox(width: 6),
+
                 Expanded(
                   child: ElevatedButton(
                     onPressed: loadMonthly,
                     child: const Text("Monthly"),
                   ),
                 ),
+
                 const SizedBox(width: 6),
+
                 Expanded(
                   child: ElevatedButton(
                     onPressed: loadYearly,
                     child: const Text("Yearly"),
                   ),
                 ),
+
                 const SizedBox(width: 6),
+
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () async {
-                      await pickStartDate();
-                      await pickEndDate();
-                      loadCustom();
-                    },
+                    onPressed: openDateRangePopup,
                     child: const Text("Custom"),
                   ),
                 ),
@@ -343,7 +481,6 @@ ORDER BY id DESC
             child: ListView.builder(
               itemCount: salesList.length,
               itemBuilder: (context, index) {
-
                 final inv = salesList[index];
 
                 return Card(
@@ -352,17 +489,13 @@ ORDER BY id DESC
                     vertical: 6,
                   ),
                   child: ListTile(
-                    title: Text(
-                      "${index + 1}. ${inv['receiverName'] ?? ""}",
-                    ),
+                    title: Text("${index + 1}. ${inv['receiverName'] ?? ""}"),
                     subtitle: Text(
                       "Invoice: ${inv['invoiceNo']} | ${formatDate(inv['invoiceDate'])}",
                     ),
                     trailing: Text(
                       "₹ ${inv['netTotal']}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 );
