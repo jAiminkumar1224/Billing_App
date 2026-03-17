@@ -1,5 +1,12 @@
+import 'dart:io';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
+
+import 'package:billing_app/services/sales_report_pdf.dart';
 
 class SalesReportScreen extends StatefulWidget {
   const SalesReportScreen({super.key});
@@ -29,8 +36,14 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
   }
 
   /// DATE FORMAT
-  String formatDate(String date) {
-    DateTime d = DateTime.parse(date);
+  String formatDate(dynamic date) {
+    DateTime d;
+
+    if (date is int) {
+      d = DateTime.fromMillisecondsSinceEpoch(date);
+    } else {
+      d = DateTime.parse(date.toString());
+    }
 
     return "${d.day.toString().padLeft(2, '0')}/"
         "${d.month.toString().padLeft(2, '0')}/"
@@ -323,6 +336,84 @@ ORDER BY id DESC
         "${date.year}";
   }
 
+void exportSalesPDF() async {
+  final itemsList = await DatabaseHelper.instance.getSalesRegisterItems();
+
+  DateTime fromDate;
+  DateTime toDate;
+
+  if (isFilterActive && startDate != null && endDate != null) {
+    /// FILTER CASE
+    fromDate = startDate!;
+    toDate = endDate!;
+  } else {
+    /// NO FILTER → FIRST & LAST BILL
+    if (salesList.isNotEmpty) {
+      final first = salesList.last['invoiceDate'];
+      final last = salesList.first['invoiceDate'];
+
+      fromDate = parseDate(first);
+      toDate = parseDate(last);
+    } else {
+      fromDate = DateTime.now();
+      toDate = DateTime.now();
+    }
+  }
+
+  final file = await generateSalesReportPDF(
+    itemsList,
+    fromDate: fromDate,
+    toDate: toDate,
+  );
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text("PDF Generated: ${file.path}")),
+  );
+}
+  pw.Widget _pdfHeader(String text) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(5),
+
+      child: pw.Text(text, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+    );
+  }
+
+  pw.Widget _pdfCell(String text) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(5),
+
+      child: pw.Text(text),
+    );
+  }
+
+  void exportSalesExcel() async {
+    String csv = "Date,Invoice,Customer,Amount\n";
+
+    for (var sale in salesList) {
+      csv +=
+          "${formatDate(sale['invoiceDate'])},"
+          "${sale['invoiceNo'].toString()},"
+          "${sale['receiverName'].toString()},"
+          "${sale['netTotal'].toString()}\n";
+    }
+
+    final dir = await getTemporaryDirectory();
+
+    final file = File("${dir.path}/sales_report.csv");
+
+    await file.writeAsString(csv);
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text("Excel exported: ${file.path}")));
+  }
+DateTime parseDate(dynamic date) {
+  if (date is int) {
+    return DateTime.fromMillisecondsSinceEpoch(date);
+  } else {
+    return DateTime.parse(date.toString());
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -330,13 +421,11 @@ ORDER BY id DESC
 
       body: Column(
         children: [
-          /// TOTAL SALES
-          /// SALES SUMMARY CARD
+          /// SALES SUMMARY CARD WITH ACTION PANEL
           Container(
             width: double.infinity,
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(16),
-
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -349,36 +438,68 @@ ORDER BY id DESC
               ],
             ),
 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                /// TITLE
-                Text(
-                  filterTitle,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey,
+                /// LEFT SIDE (SALES INFO)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        filterTitle,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey,
+                        ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      Text(
+                        "₹ ${totalSales.toStringAsFixed(2)}",
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      Text(
+                        "$totalBills Bills",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
-                const SizedBox(height: 6),
+                /// RIGHT SIDE ACTION PANEL
+                Column(
+                  children: [
+                    /// EXPORT PDF
+                    IconButton(
+                      tooltip: "Export as PDF",
+                      icon: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                      onPressed: () {
+                        exportSalesPDF();
+                      },
+                    ),
 
-                /// SALES AMOUNT
-                Text(
-                  "₹ ${totalSales.toStringAsFixed(2)}",
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                    const SizedBox(height: 8),
 
-                const SizedBox(height: 4),
-
-                /// TOTAL BILLS
-                Text(
-                  "$totalBills Bills",
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    /// EXPORT EXCEL
+                    IconButton(
+                      tooltip: "Export as Excel",
+                      icon: const Icon(Icons.table_chart, color: Colors.green),
+                      onPressed: () {
+                        exportSalesExcel();
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -491,7 +612,7 @@ ORDER BY id DESC
                   child: ListTile(
                     title: Text("${index + 1}. ${inv['receiverName'] ?? ""}"),
                     subtitle: Text(
-                      "Invoice: ${inv['invoiceNo']} | ${formatDate(inv['invoiceDate'])}",
+                      "Invoice: ${inv['invoiceNo'].toString()} | ${formatDate(inv['invoiceDate'])}",
                     ),
                     trailing: Text(
                       "₹ ${inv['netTotal']}",

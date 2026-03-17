@@ -17,11 +17,7 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _createDB,
-    );
+    return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
   Future _createDB(Database db, int version) async {
@@ -49,6 +45,27 @@ CREATE TABLE invoice_items (
   amount REAL
 )
 ''');
+  }
+
+  Future<List<Map<String, dynamic>>> getSalesRegisterItems() async {
+    final db = await database;
+
+    final result = await db.rawQuery('''
+SELECT 
+    invoices.invoiceDate,
+    invoices.invoiceNo,
+    invoice_items.itemName,
+    invoice_items.qty,
+    invoice_items.rate,
+    invoice_items.amount
+FROM invoices
+JOIN invoice_items 
+ON invoices.id = invoice_items.invoiceId
+WHERE invoices.paymentStatus='Paid'
+ORDER BY invoices.invoiceNo ASC
+''');
+
+    return result;
   }
 
   Future close() async {
