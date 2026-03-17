@@ -1,7 +1,4 @@
 import 'dart:io';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:pdf/pdf.dart';
-import 'package:printing/printing.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
@@ -370,21 +367,7 @@ void exportSalesPDF() async {
     SnackBar(content: Text("PDF Generated: ${file.path}")),
   );
 }
-  pw.Widget _pdfHeader(String text) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(5),
 
-      child: pw.Text(text, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-    );
-  }
-
-  pw.Widget _pdfCell(String text) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(5),
-
-      child: pw.Text(text),
-    );
-  }
 
   void exportSalesExcel() async {
     String csv = "Date,Invoice,Customer,Amount\n";
