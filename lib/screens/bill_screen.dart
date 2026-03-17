@@ -7,7 +7,10 @@ import 'login_screen.dart';
 import 'data_screen.dart';
 
 class BillScreen extends StatefulWidget {
-  const BillScreen({super.key});
+  final Map<String, dynamic>? customerData;
+  final String? invoiceNo;
+
+  const BillScreen({super.key, this.customerData, this.invoiceNo});
 
   @override
   State<BillScreen> createState() => _BillScreenState();
@@ -708,9 +711,7 @@ class _BillScreenState extends State<BillScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: dateRow('PO Date*', poDate, () => pickDate(false)),
-            ),
+            Expanded(child: dateRow('PO Date*', poDate, () => pickDate(false))),
           ],
         ),
       ],
