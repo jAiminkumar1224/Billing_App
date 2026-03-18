@@ -144,6 +144,22 @@ class _BillScreenState extends State<BillScreen> {
         });
       }
     });
+
+    invoiceNoController.addListener(() {
+      String normalized = normalizeInvoiceNo(invoiceNoController.text);
+
+      if (invoiceNoController.text != normalized) {
+        invoiceNoController.value = TextEditingValue(
+          text: normalized,
+          selection: TextSelection.collapsed(offset: normalized.length),
+        );
+      }
+    });
+  }
+
+  String normalizeInvoiceNo(String value) {
+    if (value.isEmpty) return value;
+    return int.tryParse(value)?.toString() ?? value;
   }
 
   Future<void> loadLastInvoice() async {
@@ -172,7 +188,7 @@ class _BillScreenState extends State<BillScreen> {
     final result = await db.query(
       'invoices',
       where: 'invoiceNo = ?',
-      whereArgs: [invoiceNo],
+      whereArgs: [normalizeInvoiceNo(invoiceNo)],
     );
 
     return result.isNotEmpty;
@@ -195,7 +211,8 @@ class _BillScreenState extends State<BillScreen> {
 
     final db = await DatabaseHelper.instance.database;
 
-    bool exists = await isInvoiceExists(invoiceNoController.text);
+    String normalizedInvoice = normalizeInvoiceNo(invoiceNoController.text);
+    bool exists = await isInvoiceExists(normalizedInvoice);
 
     if (exists) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -209,7 +226,7 @@ class _BillScreenState extends State<BillScreen> {
 
     /// 🔥 INSERT INVOICE
     savedInvoiceId = await db.insert('invoices', {
-      'invoiceNo': invoiceNoController.text,
+      'invoiceNo': normalizeInvoiceNo(invoiceNoController.text),
       'invoiceDate': invoiceDate!.toIso8601String(),
       'receiverName': receiverNameController.text,
       'receiverAddress': receiverAddressController.text,
