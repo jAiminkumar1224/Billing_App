@@ -47,10 +47,7 @@ class _AllInvoicesState extends State<AllInvoices> {
   Future<void> loadInvoices() async {
     final db = await DatabaseHelper.instance.database;
 
-    final data = await db.query(
-      'invoices',
-      orderBy: 'invoiceDate DESC',
-    );
+    final data = await db.query('invoices', orderBy: 'invoiceDate DESC');
 
     setState(() {
       invoiceList = data;
@@ -65,17 +62,14 @@ class _AllInvoicesState extends State<AllInvoices> {
     if (searchText.isNotEmpty) {
       temp = temp.where((inv) {
         return inv['invoiceNo'].toString().contains(searchText) ||
-            (inv['receiverName'] ?? "")
-                .toString()
-                .toLowerCase()
-                .contains(searchText.toLowerCase());
+            (inv['receiverName'] ?? "").toString().toLowerCase().contains(
+              searchText.toLowerCase(),
+            );
       }).toList();
     }
 
     if (statusFilter != "All") {
-      temp = temp
-          .where((inv) => inv['paymentStatus'] == statusFilter)
-          .toList();
+      temp = temp.where((inv) => inv['paymentStatus'] == statusFilter).toList();
     }
 
     setState(() {
@@ -91,9 +85,7 @@ class _AllInvoicesState extends State<AllInvoices> {
       DateTime d = parseDate(inv['invoiceDate']);
 
       if (type == "today") {
-        return d.day == now.day &&
-            d.month == now.month &&
-            d.year == now.year;
+        return d.day == now.day && d.month == now.month && d.year == now.year;
       } else if (type == "week") {
         DateTime start = now.subtract(Duration(days: now.weekday - 1));
         DateTime end = start.add(const Duration(days: 6));
@@ -111,9 +103,7 @@ class _AllInvoicesState extends State<AllInvoices> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => InvoicePreviewScreen(invoice: inv),
-          ),
+          MaterialPageRoute(builder: (_) => InvoicePreviewScreen(invoice: inv)),
         );
       },
       child: Container(
@@ -122,17 +112,16 @@ class _AllInvoicesState extends State<AllInvoices> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              blurRadius: 4,
-            ),
+            BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 4),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("INV-${inv['invoiceNo']}",
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              "INV-${inv['invoiceNo']}",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
 
             const SizedBox(height: 5),
 
@@ -144,8 +133,10 @@ class _AllInvoicesState extends State<AllInvoices> {
 
             const SizedBox(height: 5),
 
-            Text("₹ ${inv['netTotal']}",
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              "₹ ${inv['netTotal']}",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
 
             const SizedBox(height: 5),
 
@@ -172,23 +163,36 @@ class _AllInvoicesState extends State<AllInvoices> {
       children: [
         Padding(
           padding: const EdgeInsets.all(10),
-          child: Text(title,
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
         ),
 
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: list.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 1.4,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-          ),
-          itemBuilder: (context, index) {
-            return invoiceCard(list[index]);
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // 👉 1 cm ≈ 37.8 px (approx)
+            double boxSize = 5 * 37.8; // 5 cm
+
+            int crossAxisCount = (constraints.maxWidth / boxSize).floor().clamp(
+              1,
+              10,
+            );
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: list.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: 1, // perfect square 🔥
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemBuilder: (context, index) {
+                return invoiceCard(list[index]);
+              },
+            );
           },
         ),
       ],
@@ -282,9 +286,10 @@ class InvoicePreviewScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            Text("Total: ₹ ${invoice['netTotal']}",
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              "Total: ₹ ${invoice['netTotal']}",
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
 
             const Spacer(),
 
@@ -295,12 +300,9 @@ class InvoicePreviewScreen extends StatelessWidget {
                   child: const Text("Download PDF"),
                 ),
                 const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () {},
-                  child: const Text("Print"),
-                ),
+                ElevatedButton(onPressed: () {}, child: const Text("Print")),
               ],
-            )
+            ),
           ],
         ),
       ),
