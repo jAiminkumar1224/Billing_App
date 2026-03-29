@@ -47,7 +47,7 @@ class _AllInvoicesState extends State<AllInvoices> {
   Future<void> loadInvoices() async {
     final db = await DatabaseHelper.instance.database;
 
-    final data = await db.query('invoices', orderBy: 'invoiceDate DESC');
+    final data = await db.query('invoices', orderBy: 'id DESC');
 
     setState(() {
       invoiceList = data;
@@ -101,9 +101,119 @@ class _AllInvoicesState extends State<AllInvoices> {
   Widget invoiceCard(Map<String, dynamic> inv) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => InvoicePreviewScreen(invoice: inv)),
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (_) => Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Text(
+                    inv['receiverName'] ?? "",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Column(
+                      children: [
+                        const Text("Invoice"),
+                        Text("INV-${inv['invoiceNo']}"),
+                      ],
+                    ),
+                    Column(
+                      children: [
+                        const Text("Total"),
+                        Text("₹ ${inv['netTotal']}"),
+                      ],
+                    ),
+                    Column(
+                      children: [
+                        const Text("Status"),
+                        Text(
+                          inv['paymentStatus'],
+                          style: TextStyle(
+                            color: inv['paymentStatus'] == "Paid"
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                Text("Date: ${formatDate(inv['invoiceDate'])}"),
+
+                const Divider(),
+
+                const Text(
+                  "Items",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 10),
+
+                Expanded(
+                  child: FutureBuilder(
+                    future: DatabaseHelper.instance.database.then((db) {
+                      return db.query(
+                        'invoice_items',
+                        where: 'invoiceId = ?',
+                        whereArgs: [inv['id']],
+                      );
+                    }),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      final items = snapshot.data as List<Map<String, dynamic>>;
+
+                      return ListView.builder(
+                        itemCount: items.length,
+                        itemBuilder: (_, i) {
+                          final item = items[i];
+
+                          return ListTile(
+                            title: Text(item['itemName']),
+                            subtitle: Text("Qty: ${item['qty']}"),
+                            trailing: Text("₹ ${item['amount']}"),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {},
+                      child: const Text("Download PDF"),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {},
+                      child: const Text("Print"),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         );
       },
       child: Container(
@@ -171,7 +281,6 @@ class _AllInvoicesState extends State<AllInvoices> {
 
         LayoutBuilder(
           builder: (context, constraints) {
-            // 👉 1 cm ≈ 37.8 px (approx)
             double boxSize = 5 * 37.8; // 5 cm
 
             int crossAxisCount = (constraints.maxWidth / boxSize).floor().clamp(
@@ -185,7 +294,7 @@ class _AllInvoicesState extends State<AllInvoices> {
               itemCount: list.length,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
-                childAspectRatio: 1, // perfect square 🔥
+                childAspectRatio: 1,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
               ),
