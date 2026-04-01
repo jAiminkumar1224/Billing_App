@@ -2,24 +2,21 @@ class InvoiceModel {
   int? id;
   String invoiceNo;
   String invoiceDate;
-
   String state;
   String stateCode;
-
   String receiverName;
   String receiverAddress;
   String receiverGstin;
   String receiverState;
   String receiverStateCode;
-
   String poNumber;
   String poDate;
-
   double subtotal;
   double discount;
   double netTotal;
-
   String paymentStatus;
+
+  
 
   InvoiceModel({
     this.id,

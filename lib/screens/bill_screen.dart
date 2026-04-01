@@ -9,8 +9,14 @@ import 'data_screen.dart';
 class BillScreen extends StatefulWidget {
   final Map<String, dynamic>? customerData;
   final String? invoiceNo;
+  final InvoiceModel? invoice;
 
-  const BillScreen({super.key, this.customerData, this.invoiceNo});
+  const BillScreen({
+    super.key,
+    this.customerData,
+    this.invoiceNo,
+    this.invoice,
+  });
 
   @override
   State<BillScreen> createState() => _BillScreenState();
@@ -132,6 +138,25 @@ class _BillScreenState extends State<BillScreen> {
     _itemScrollController = ScrollController();
 
     loadLastInvoice();
+    if (widget.invoice != null) {
+      invoiceNoController.text = widget.invoice!.invoiceNo;
+      invoiceDate = DateTime.parse(widget.invoice!.invoiceDate);
+
+      stateController.text = widget.invoice!.state;
+      stateCodeController.text = widget.invoice!.stateCode;
+
+      receiverNameController.text = widget.invoice!.receiverName;
+      receiverAddressController.text = widget.invoice!.receiverAddress;
+      receiverGstinController.text = widget.invoice!.receiverGstin;
+      receiverStateController.text = widget.invoice!.receiverState;
+
+      poNumberController.text = widget.invoice!.poNumber;
+      poDate = DateTime.parse(widget.invoice!.poDate);
+
+      paymentStatus = widget.invoice!.paymentStatus;
+
+      loadItems();
+    }
 
     invoiceNoController.addListener(() {
       if (invoiceNoController.text.isEmpty) {
@@ -160,6 +185,30 @@ class _BillScreenState extends State<BillScreen> {
   String normalizeInvoiceNo(String value) {
     if (value.isEmpty) return value;
     return int.tryParse(value)?.toString() ?? value;
+  }
+
+  Future<void> loadItems() async {
+    final db = await DatabaseHelper.instance.database;
+
+    final data = await db.query(
+      'invoice_items',
+      where: 'invoiceId = ?',
+      whereArgs: [widget.invoice!.id],
+    );
+
+    items.clear();
+
+    for (var item in data) {
+      final newItem = BillItem();
+      newItem.nameController.text = item['itemName'].toString();
+      newItem.uomController.text = item['uom'].toString();
+      newItem.qtyController.text = item['qty'].toString();
+      newItem.rateController.text = item['rate'].toString();
+
+      items.add(newItem);
+    }
+
+    setState(() {});
   }
 
   Future<void> loadLastInvoice() async {
@@ -214,7 +263,7 @@ class _BillScreenState extends State<BillScreen> {
     String normalizedInvoice = normalizeInvoiceNo(invoiceNoController.text);
     bool exists = await isInvoiceExists(normalizedInvoice);
 
-    if (exists) {
+    if (widget.invoice == null && exists) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Invoice Number already exists"),
@@ -247,7 +296,42 @@ class _BillScreenState extends State<BillScreen> {
       paymentStatus: paymentStatus,
     );
 
-    savedInvoiceId = await db.insert('invoices', invoice.toMap());
+    if (widget.invoice == null) {
+      if (widget.invoice == null) {
+        savedInvoiceId = await db.insert('invoices', invoice.toMap());
+      } else {
+        // ✏️ UPDATE
+        savedInvoiceId = widget.invoice!.id;
+
+        await db.update(
+          'invoices',
+          invoice.toMap(),
+          where: 'id = ?',
+          whereArgs: [savedInvoiceId],
+        );
+
+        await db.delete(
+          'invoice_items',
+          where: 'invoiceId = ?',
+          whereArgs: [savedInvoiceId],
+        );
+      }
+    } else {
+      savedInvoiceId = widget.invoice!.id;
+
+      await db.update(
+        'invoices',
+        invoice.toMap(),
+        where: 'id = ?',
+        whereArgs: [savedInvoiceId],
+      );
+
+      await db.delete(
+        'invoice_items',
+        where: 'invoiceId = ?',
+        whereArgs: [savedInvoiceId],
+      );
+    }
 
     ///  INSERT ITEMS
     for (var item in items) {
@@ -266,6 +350,12 @@ class _BillScreenState extends State<BillScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text("Bill Saved Successfully")));
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (widget.invoice != null && mounted) {
+        Navigator.pop(context, true);
+      }
+    });
   }
 
   Future<bool> askSaveBeforePrint() async {

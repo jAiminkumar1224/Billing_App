@@ -1,3 +1,4 @@
+import 'package:billing_app/models/invoice_item_model.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -20,9 +21,8 @@ class DatabaseHelper {
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
-Future _createDB(Database db, int version) async {
-
-  await db.execute('''
+  Future _createDB(Database db, int version) async {
+    await db.execute('''
 CREATE TABLE invoices (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   invoiceNo TEXT UNIQUE,
@@ -49,7 +49,7 @@ CREATE TABLE invoices (
 )
 ''');
 
-  await db.execute('''
+    await db.execute('''
 CREATE TABLE invoice_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   invoiceId INTEGER,
@@ -61,7 +61,7 @@ CREATE TABLE invoice_items (
   FOREIGN KEY (invoiceId) REFERENCES invoices(id) ON DELETE CASCADE
 )
 ''');
-}
+  }
 
   Future<List<Map<String, dynamic>>> getSalesRegisterItems() async {
     final db = await database;
@@ -87,5 +87,29 @@ ORDER BY invoices.invoiceNo ASC
   Future close() async {
     final db = await instance.database;
     db.close();
+  }
+
+  Future<List<InvoiceItemModel>> getItemsByInvoiceId(int invoiceId) async {
+    final db = await DatabaseHelper.instance.database;
+
+    final result = await db.query(
+      'invoice_items',
+      where: 'invoiceId = ?',
+      whereArgs: [invoiceId],
+    );
+
+    return result
+        .map(
+          (e) => InvoiceItemModel(
+            id: e['id'] as int?,
+            invoiceId: e['invoiceId'] as int,
+            itemName: e['itemName'].toString(),
+            uom: e['uom'].toString(),
+            qty: e['qty'] as int,
+            rate: (e['rate'] as num).toDouble(),
+            amount: (e['amount'] as num).toDouble(),
+          ),
+        )
+        .toList();
   }
 }

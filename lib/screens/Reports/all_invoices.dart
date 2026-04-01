@@ -1,3 +1,5 @@
+import 'package:billing_app/models/invoice_model.dart';
+import 'package:billing_app/screens/bill_screen.dart';
 import 'package:billing_app/services/print_bill.dart';
 import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
@@ -203,11 +205,48 @@ class _AllInvoicesState extends State<AllInvoices> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BillScreen(
+                              invoice: InvoiceModel(
+                                id: inv['id'],
+                                invoiceNo: inv['invoiceNo'],
+                                invoiceDate: inv['invoiceDate'],
+                                state: inv['state'],
+                                stateCode: inv['stateCode'],
+                                receiverName: inv['receiverName'],
+                                receiverAddress: inv['receiverAddress'],
+                                receiverGstin: inv['receiverGstin'],
+                                receiverState: inv['receiverState'],
+                                receiverStateCode: inv['receiverStateCode'],
+                                poNumber: inv['poNumber'],
+                                poDate: inv['poDate'],
+                                subtotal: inv['subtotal'],
+                                discount: inv['discount'],
+                                netTotal: inv['netTotal'],
+                                paymentStatus: inv['paymentStatus'],
+                              ),
+                            ),
+                          ),
+                        );
+
+                        if (result == true) {
+                          loadInvoices();
+                        }
+                      },
+                      child: const Text("Edit Bill"),
+                    ),
+                    ElevatedButton(
                       onPressed: () {},
                       child: const Text("Download PDF"),
                     ),
                     ElevatedButton(
-                      onPressed: () { printInvoiceFromDb(inv);},
+                      onPressed: () {
+                        printInvoiceFromDb(inv);
+                      },
                       child: const Text("Print"),
                     ),
                   ],
@@ -368,53 +407,6 @@ class _AllInvoicesState extends State<AllInvoices> {
           applyFilter();
         },
         child: Text(text),
-      ),
-    );
-  }
-}
-
-/// ================= PREVIEW SCREEN =================
-
-class InvoicePreviewScreen extends StatelessWidget {
-  final Map<String, dynamic> invoice;
-
-  const InvoicePreviewScreen({super.key, required this.invoice});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Invoice Preview")),
-
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Invoice No: ${invoice['invoiceNo']}"),
-            Text("Customer: ${invoice['receiverName']}"),
-            Text("Date: ${invoice['invoiceDate']}"),
-
-            const SizedBox(height: 20),
-
-            Text(
-              "Total: ₹ ${invoice['netTotal']}",
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-
-            const Spacer(),
-
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () {},
-                  child: const Text("Download PDF"),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(onPressed: () {}, child: const Text("Print")),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
