@@ -1,6 +1,6 @@
 import 'package:billing_app/database/database_helper.dart';
+import 'package:billing_app/models/invoice_model.dart';
 import 'package:flutter/material.dart';
-import '../services/pdf_service.dart';
 import 'package:flutter/services.dart';
 
 import 'login_screen.dart';
@@ -224,23 +224,37 @@ class _BillScreenState extends State<BillScreen> {
       return;
     }
 
-    /// 🔥 INSERT INVOICE
-    savedInvoiceId = await db.insert('invoices', {
-      'invoiceNo': normalizeInvoiceNo(invoiceNoController.text),
-      'invoiceDate': invoiceDate!.toIso8601String(),
-      'receiverName': receiverNameController.text,
-      'receiverAddress': receiverAddressController.text,
-      'subtotal': subTotal,
-      'discount': discountAmount,
-      'netTotal': netTotal,
-      'paymentStatus': paymentStatus,
-    });
+    ///  INSERT INVOICE
+    final invoice = InvoiceModel(
+      invoiceNo: normalizeInvoiceNo(invoiceNoController.text),
+      invoiceDate: invoiceDate!.toIso8601String(),
 
-    /// 🔥 INSERT ITEMS
+      state: stateController.text,
+      stateCode: stateCodeController.text,
+
+      receiverName: receiverNameController.text,
+      receiverAddress: receiverAddressController.text,
+      receiverGstin: receiverGstinController.text,
+      receiverState: receiverStateController.text,
+      receiverStateCode: receiverStateCodeController.text,
+
+      poNumber: poNumberController.text,
+      poDate: poDate!.toIso8601String(),
+
+      subtotal: subTotal,
+      discount: discountAmount,
+      netTotal: netTotal,
+      paymentStatus: paymentStatus,
+    );
+
+    savedInvoiceId = await db.insert('invoices', invoice.toMap());
+
+    ///  INSERT ITEMS
     for (var item in items) {
       await db.insert('invoice_items', {
         'invoiceId': savedInvoiceId,
         'itemName': item.nameController.text,
+        'uom': item.uomController.text,
         'qty': int.tryParse(item.qtyController.text) ?? 0,
         'rate': double.tryParse(item.rateController.text) ?? 0,
         'amount': item.amount,
@@ -395,7 +409,7 @@ class _BillScreenState extends State<BillScreen> {
     return Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E3A8A), // 🔥 ADD THIS
+        backgroundColor: const Color(0xFF1E3A8A),
         foregroundColor: Colors.white,
         title: const Text('Billing Screen'),
         leading: Builder(

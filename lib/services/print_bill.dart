@@ -1,73 +1,43 @@
-//  Future<void> printBill() async {
-//     bool canPrint = await askSaveBeforePrint();
-//     if (!canPrint) return;
+import '../database/database_helper.dart';
+import '../services/pdf_service.dart';
+import '../screens/bill_screen.dart';
 
-//     for (int i = 0; i < items.length; i++) {
-//       if (items[i].nameController.text.trim().isEmpty ||
-//           items[i].qtyController.text.trim().isEmpty ||
-//           items[i].rateController.text.trim().isEmpty) {
-//         showDialog(
-//           context: context,
-//           builder: (_) => AlertDialog(
-//             title: const Text('Incomplete Item'),
-//             content: Text(
-//               'Item ${i + 1} is empty.\nPlease fill or delete this item.',
-//             ),
-//             actions: [
-//               TextButton(
-//                 onPressed: () => Navigator.pop(context),
-//                 child: const Text('OK'),
-//               ),
-//             ],
-//           ),
-//         );
-//         return;
-//       }
-//     }
-//     if (invoiceNoController.text.isEmpty ||
-//         invoiceDate == null ||
-//         stateController.text.isEmpty ||
-//         stateCodeController.text.isEmpty ||
-//         receiverNameController.text.isEmpty ||
-//         receiverAddressController.text.isEmpty ||
-//         receiverGstinController.text.isEmpty ||
-//         receiverStateController.text.isEmpty ||
-//         receiverStateCodeController.text.isEmpty ||
-//         poNumberController.text.isEmpty ||
-//         poDate == null ||
-//         items.isEmpty) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(content: Text('Please fill all mandatory fields')),
-//       );
-//       return;
-//     }
+Future<void> printInvoiceFromDb(Map<String, dynamic> inv) async {
+  final db = await DatabaseHelper.instance.database;
 
-//     PdfService().printBill(
-//       invoiceNo: invoiceNoController.text,
-//       invoiceDate: invoiceDate!,
-//       state: stateController.text,
-//       stateCode: stateCodeController.text,
-//       receiverName: receiverNameController.text,
-//       receiverAddress: receiverAddressController.text,
-//       receiverGstin: receiverGstinController.text,
-//       poNumber: poNumberController.text,
-//       poDate: poDate!,
-//       receiverStateCode: receiverStateCodeController.text,
-//       items: items,
-//       subTotal: subTotal,
-//       discountAmount: discountAmount,
-//       discountPercentText: discountController.text,
-//       netTotal: netTotal,
-//     );
+  final itemsData = await db.query(
+    'invoice_items',
+    where: 'invoiceId = ?',
+    whereArgs: [inv['id']],
+  );
 
-//     await insertInvoice({
-//       'invoiceNo': invoiceNoController.text,
-//       'invoiceDate': invoiceDate!.toIso8601String(),
-//       'receiverName': receiverNameController.text,
-//       'receiverAddress': receiverAddressController.text,
-//       'subtotal': subTotal,
-//       'discount': discountAmount,
-//       'netTotal': netTotal,
-//       'paymentStatus': "Paid",
-//     });
-//   }
+  List<BillItem> items = itemsData.map((item) {
+    final billItem = BillItem();
+    billItem.nameController.text = item['itemName']?.toString() ?? '';
+    billItem.qtyController.text = item['qty'].toString();
+    billItem.rateController.text = item['rate'].toString();
+    billItem.uomController.text = item['uom']?.toString() ?? "";
+    return billItem;
+  }).toList();
+
+  PdfService().printBill(
+    invoiceNo: inv['invoiceNo'].toString(),
+    invoiceDate: DateTime.parse(inv['invoiceDate']),
+    state: inv['state']?.toString() ?? "",
+    stateCode: inv['stateCode']?.toString() ?? "",
+    receiverName: inv['receiverName'] ?? "",
+    receiverAddress: inv['receiverAddress'] ?? "",
+    receiverGstin: inv['receiverGstin']?.toString() ?? "",
+    poNumber: inv['poNumber']?.toString() ?? "",
+    poDate: inv['poDate'] != null
+        ? DateTime.parse(inv['poDate'])
+        : DateTime.now(),
+    receiverState: inv['receiverState']?.toString() ?? "",
+    receiverStateCode: inv['receiverStateCode']?.toString() ?? "",
+    items: items,
+    subTotal: inv['subtotal'] ?? 0,
+    discountAmount: inv['discount'] ?? 0,
+    discountPercentText: "0",
+    netTotal: inv['netTotal'] ?? 0,
+  );
+}

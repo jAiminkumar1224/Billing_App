@@ -20,32 +20,48 @@ class DatabaseHelper {
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
-  Future _createDB(Database db, int version) async {
-    await db.execute('''
+Future _createDB(Database db, int version) async {
+
+  await db.execute('''
 CREATE TABLE invoices (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  invoiceNo TEXT,
+  invoiceNo TEXT UNIQUE,
   invoiceDate TEXT,
+
+  state TEXT,
+  stateCode TEXT,
+
   receiverName TEXT,
   receiverAddress TEXT,
+  receiverGstin TEXT,
+  receiverState TEXT,
+  receiverStateCode TEXT,
+
+  poNumber TEXT,
+  poDate TEXT,
+
   subtotal REAL,
   discount REAL,
   netTotal REAL,
-  paymentStatus TEXT
+
+  paymentStatus TEXT,
+  createdAt TEXT DEFAULT CURRENT_TIMESTAMP
 )
 ''');
 
-    await db.execute('''
+  await db.execute('''
 CREATE TABLE invoice_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   invoiceId INTEGER,
   itemName TEXT,
+  uom TEXT,
   qty INTEGER,
   rate REAL,
-  amount REAL
+  amount REAL,
+  FOREIGN KEY (invoiceId) REFERENCES invoices(id) ON DELETE CASCADE
 )
 ''');
-  }
+}
 
   Future<List<Map<String, dynamic>>> getSalesRegisterItems() async {
     final db = await database;

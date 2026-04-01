@@ -1,3 +1,4 @@
+import 'package:billing_app/services/print_bill.dart';
 import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
 
@@ -206,7 +207,7 @@ class _AllInvoicesState extends State<AllInvoices> {
                       child: const Text("Download PDF"),
                     ),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () { printInvoiceFromDb(inv);},
                       child: const Text("Print"),
                     ),
                   ],
