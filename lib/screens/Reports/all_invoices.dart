@@ -1,5 +1,6 @@
 import 'package:billing_app/models/invoice_model.dart';
 import 'package:billing_app/screens/bill_screen.dart';
+import 'package:billing_app/services/pdf_service.dart';
 import 'package:billing_app/services/print_bill.dart';
 import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
@@ -240,7 +241,37 @@ class _AllInvoicesState extends State<AllInvoices> {
                       child: const Text("Edit Bill"),
                     ),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () async {
+                        final db = await DatabaseHelper.instance.database;
+
+                        final itemsData = await db.query(
+                          'invoice_items',
+                          where: 'invoiceId = ?',
+                          whereArgs: [inv['id']],
+                        );
+
+                        /// convert items to controller format (same as print)
+                        final items = itemsData;
+
+                        await PdfService().downloadBill(
+                          invoiceNo: inv['invoiceNo'].toString(),
+                          invoiceDate: parseDate(inv['invoiceDate']),
+                          state: inv['state'],
+                          stateCode: inv['stateCode'],
+                          receiverStateCode: inv['receiverStateCode'],
+                          receiverState: inv['receiverState'],
+                          receiverName: inv['receiverName'],
+                          receiverAddress: inv['receiverAddress'],
+                          receiverGstin: inv['receiverGstin'],
+                          poNumber: inv['poNumber'],
+                          poDate: parseDate(inv['poDate']),
+                          items: items,
+                          subTotal: inv['subtotal'],
+                          discountAmount: inv['discount'],
+                          netTotal: inv['netTotal'],
+                          discountPercentText: "0", // adjust if needed
+                        );
+                      },
                       child: const Text("Download PDF"),
                     ),
                     ElevatedButton(

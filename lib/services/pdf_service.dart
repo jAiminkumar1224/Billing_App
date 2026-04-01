@@ -1,7 +1,9 @@
-// ===== SAME IMPORT =====
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:open_filex/open_filex.dart';
 
 class PdfService {
   Future<void> printBill({
@@ -34,7 +36,7 @@ class PdfService {
           marginBottom: PdfPageFormat.cm * 1,
         ),
 
-        /// ⚠️ footer always bottom (bank + sign)
+        ///  footer always bottom (bank + sign)
         footer: (context) => pw.Padding(
           padding: pw.EdgeInsets.only(
             left: PdfPageFormat.cm * 1,
@@ -44,7 +46,6 @@ class PdfService {
         ),
 
         build: (context) => [
-
           /// ================= HEADER =================
           pw.Padding(
             padding: pw.EdgeInsets.symmetric(horizontal: PdfPageFormat.cm * 1),
@@ -137,7 +138,6 @@ class PdfService {
                 5: pw.FlexColumnWidth(1.5),
               },
               children: [
-
                 /// header row
                 pw.TableRow(
                   decoration: const pw.BoxDecoration(
@@ -181,72 +181,324 @@ class PdfService {
           /// ================= TOTALS (SMART FLOW) =================
           pw.SizedBox(height: 8),
 
-          /// ⚠️ IMPORTANT: split na thay
+          /// IMPORTANT: split na thay
           pw.Padding(
-              padding: pw.EdgeInsets.symmetric(horizontal: PdfPageFormat.cm * 1),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
-                children: [
-
-                  /// summary
-                  pw.Container(
-                    width: 250,
-                    child: pw.Column(
-                      children: [
-                        totalRow('Sub Total', subTotal),
-                        if (discountAmount > 0)
-                          totalRow(
-                            'Discount ($discountPercentText%)',
-                            -discountAmount,
-                          ),
-                        pw.Divider(),
-                        totalRow('Net Total', netTotal, bold: true),
-                      ],
-                    ),
-                  ),
-
-                  pw.SizedBox(height: 6),
-
-                  /// amount in words
-                  pw.Container(
-                    width: double.infinity,
-                    decoration: pw.BoxDecoration(
-                      border: pw.Border.all(width: 1),
-                    ),
-                    padding: const pw.EdgeInsets.all(6),
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          'Total Invoice Amount In Words:',
-                          style: pw.TextStyle(
-                            fontWeight: pw.FontWeight.bold,
-                            fontSize: 12,
-                          ),
+            padding: pw.EdgeInsets.symmetric(horizontal: PdfPageFormat.cm * 1),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                /// summary
+                pw.Container(
+                  width: 250,
+                  child: pw.Column(
+                    children: [
+                      totalRow('Sub Total', subTotal),
+                      if (discountAmount > 0)
+                        totalRow(
+                          'Discount ($discountPercentText%)',
+                          -discountAmount,
                         ),
-                        pw.SizedBox(height: 4),
-                        pw.Align(
-                          alignment: pw.Alignment.center,
-                          child: pw.Text(
-                            numberToWords(netTotal),
-                            textAlign: pw.TextAlign.center,
-                            style: pw.TextStyle(fontSize: 11),
-                          ),
-                        ),
-                      ],
-                    ),
+                      pw.Divider(),
+                      totalRow('Net Total', netTotal, bold: true),
+                    ],
                   ),
-                ],
-              ),
+                ),
+
+                pw.SizedBox(height: 6),
+
+                /// amount in words
+                pw.Container(
+                  width: double.infinity,
+                  decoration: pw.BoxDecoration(border: pw.Border.all(width: 1)),
+                  padding: const pw.EdgeInsets.all(6),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'Total Invoice Amount In Words:',
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Align(
+                        alignment: pw.Alignment.center,
+                        child: pw.Text(
+                          numberToWords(netTotal),
+                          textAlign: pw.TextAlign.center,
+                          style: pw.TextStyle(fontSize: 11),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+          ),
         ],
       ),
     );
 
     await Printing.layoutPdf(onLayout: (format) async => pdf.save());
   }
-}
 
+  Future<void> downloadBill({
+    required String invoiceNo,
+    required DateTime invoiceDate,
+    required String state,
+    required String stateCode,
+    required String receiverStateCode,
+    required String receiverState,
+    required String receiverName,
+    required String receiverAddress,
+    required String receiverGstin,
+    required String poNumber,
+    required DateTime poDate,
+    required List items,
+    required double subTotal,
+    required double discountAmount,
+    required double netTotal,
+    required String discountPercentText,
+  }) async {
+    final pdf = pw.Document();
+
+    // SAME CODE (copy from printBill)
+    pdf.addPage(
+      pw.MultiPage(
+        header: (context) => pw.SizedBox(height: PdfPageFormat.cm * 4.5),
+        pageFormat: PdfPageFormat.a4.copyWith(
+          marginLeft: 0,
+          marginRight: 0,
+          marginTop: 0,
+          marginBottom: PdfPageFormat.cm * 1,
+        ),
+        footer: (context) => pw.Padding(
+          padding: pw.EdgeInsets.only(
+            left: PdfPageFormat.cm * 1,
+            right: PdfPageFormat.cm * 1,
+          ),
+          child: bankAndSignatureSection(),
+        ),
+        build: (context) => [
+          //  IMPORTANT:
+          /// Ahiya tu printBill mathi pura content copy paste karje
+          ///           /// ================= HEADER =================
+          pw.Padding(
+            padding: pw.EdgeInsets.symmetric(horizontal: PdfPageFormat.cm * 1),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Center(
+                  child: pw.Text(
+                    'BILL OF SUPPLY',
+                    style: pw.TextStyle(
+                      fontSize: 18,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ),
+                pw.SizedBox(height: 5),
+
+                pw.Table(
+                  border: pw.TableBorder.all(),
+                  columnWidths: {
+                    0: pw.FlexColumnWidth(35),
+                    1: pw.FlexColumnWidth(35),
+                    2: pw.FlexColumnWidth(20),
+                    3: pw.FlexColumnWidth(10),
+                  },
+                  children: [
+                    fixedInfoRow(
+                      'Invoice No : $invoiceNo',
+                      'GSTIN : 24FRLPP4169J1Z6',
+                      'Original',
+                    ),
+                    fixedInfoRow(
+                      'Date : ${formatDate(invoiceDate)}',
+                      'PAN : FRLPP4169J',
+                      'Duplicate',
+                    ),
+                    fixedInfoRow(
+                      'State : $state',
+                      'State Code : $stateCode',
+                      'Triplicate',
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 5),
+
+                pw.Table(
+                  border: pw.TableBorder.all(),
+                  columnWidths: {
+                    0: pw.FlexColumnWidth(3),
+                    1: pw.FlexColumnWidth(2),
+                  },
+                  children: [
+                    pw.TableRow(
+                      children: [
+                        receiverBox(
+                          receiverName,
+                          receiverAddress,
+                          receiverGstin,
+                          receiverState,
+                          receiverStateCode,
+                        ),
+                        poBox(poNumber, poDate),
+                      ],
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 5),
+              ],
+            ),
+          ),
+
+          /// ================= ITEMS TABLE =================
+          pw.Padding(
+            padding: pw.EdgeInsets.symmetric(horizontal: PdfPageFormat.cm * 1),
+            child: pw.Table(
+              border: pw.TableBorder(
+                left: pw.BorderSide(),
+                right: pw.BorderSide(),
+                top: pw.BorderSide(),
+                bottom: pw.BorderSide(),
+                verticalInside: pw.BorderSide(),
+                horizontalInside: pw.BorderSide.none,
+              ),
+              columnWidths: {
+                0: pw.FlexColumnWidth(0.6),
+                1: pw.FlexColumnWidth(5.7),
+                2: pw.FlexColumnWidth(0.8),
+                3: pw.FlexColumnWidth(0.8),
+                4: pw.FlexColumnWidth(0.8),
+                5: pw.FlexColumnWidth(1.5),
+              },
+              children: [
+                /// header row
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(
+                    border: pw.Border(bottom: pw.BorderSide(width: 1)),
+                  ),
+                  children: [
+                    headerCell('No'),
+                    headerCell('Description of Goods'),
+                    headerCell('UOM'),
+                    headerCell('Qty'),
+                    headerCell('Rate'),
+                    headerCell('Amount'),
+                  ],
+                ),
+
+                /// items
+                ...items.asMap().entries.map((e) {
+                  final i = e.key + 1;
+                  final item = e.value;
+                  return pw.TableRow(
+                    children: [
+                      normalCell(i.toString()),
+                      normalCell(
+                        item['itemName'],
+                        alignment: pw.Alignment.centerLeft,
+                      ),
+                      normalCell(item['uom'] ?? ""),
+                      normalCell(item['qty'].toString()),
+                      normalCell(item['rate'].toString()),
+                      normalCell(
+                        double.parse(
+                          item['amount'].toString(),
+                        ).toStringAsFixed(2),
+                        alignment: pw.Alignment.centerRight,
+                      ),
+                    ],
+                  );
+                }),
+              ],
+            ),
+          ),
+
+          /// ================= TOTALS (SMART FLOW) =================
+          pw.SizedBox(height: 8),
+
+          /// IMPORTANT: split na thay
+          pw.Padding(
+            padding: pw.EdgeInsets.symmetric(horizontal: PdfPageFormat.cm * 1),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                /// summary
+                pw.Container(
+                  width: 250,
+                  child: pw.Column(
+                    children: [
+                      totalRow('Sub Total', subTotal),
+                      if (discountAmount > 0)
+                        totalRow(
+                          'Discount ($discountPercentText%)',
+                          -discountAmount,
+                        ),
+                      pw.Divider(),
+                      totalRow('Net Total', netTotal, bold: true),
+                    ],
+                  ),
+                ),
+
+                pw.SizedBox(height: 6),
+
+                /// amount in words
+                pw.Container(
+                  width: double.infinity,
+                  decoration: pw.BoxDecoration(border: pw.Border.all(width: 1)),
+                  padding: const pw.EdgeInsets.all(6),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'Total Invoice Amount In Words:',
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Align(
+                        alignment: pw.Alignment.center,
+                        child: pw.Text(
+                          numberToWords(netTotal),
+                          textAlign: pw.TextAlign.center,
+                          style: pw.TextStyle(fontSize: 11),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    /// 👇 PDF bytes
+    final bytes = await pdf.save();
+
+    /// 👇 File picker (SAVE AS dialog)
+    String? outputFile = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save Invoice PDF',
+      fileName: 'Invoice_$invoiceNo.pdf',
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (outputFile == null) return; // user cancel
+
+    final file = File(outputFile);
+    await file.writeAsBytes(bytes);
+
+    /// optional → open file after save
+    await OpenFilex.open(outputFile);
+  }
+}
 
 /// ================= BANK + SEAL + GST =================
 pw.Widget bankAndSignatureSection() {
