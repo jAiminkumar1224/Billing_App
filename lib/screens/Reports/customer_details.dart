@@ -14,8 +14,6 @@ class _CustomerDetailsState extends State<CustomerDetails> {
   List<Map<String, dynamic>> filteredCustomers = [];
   TextEditingController searchController = TextEditingController();
 
-  String selectedView = "List";
-
   @override
   void initState() {
     super.initState();
@@ -53,7 +51,6 @@ class _CustomerDetailsState extends State<CustomerDetails> {
     });
   }
 
-  // 📞 CALL POPUP
   void showCallPopup(String phone) {
     showDialog(
       context: context,
@@ -70,7 +67,6 @@ class _CustomerDetailsState extends State<CustomerDetails> {
     );
   }
 
-  // 💬 WHATSAPP POPUP
   void showWhatsAppPopup(String phone) {
     showDialog(
       context: context,
@@ -99,7 +95,6 @@ class _CustomerDetailsState extends State<CustomerDetails> {
     );
   }
 
-  // ➕ CREATE INVOICE (PREFILL)
   void createInvoice(Map<String, dynamic> customer) async {
     final db = await DatabaseHelper.instance.database;
 
@@ -117,14 +112,13 @@ class _CustomerDetailsState extends State<CustomerDetails> {
       context,
       MaterialPageRoute(
         builder: (_) => BillScreen(
-          customerData: customer, // 👉 PREFILL DATA
+          customerData: customer,
           invoiceNo: nextInvoice.toString(),
         ),
       ),
     );
   }
 
-  // 📊 CUSTOMER BIG POPUP
   void showCustomerPopup(Map<String, dynamic> cust) async {
     final db = await DatabaseHelper.instance.database;
 
@@ -143,15 +137,12 @@ class _CustomerDetailsState extends State<CustomerDetails> {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // 🔝 HEADER
             Text(
               cust['receiverName'],
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 10),
 
-            // 📊 SUMMARY
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -180,12 +171,10 @@ class _CustomerDetailsState extends State<CustomerDetails> {
             ),
 
             const SizedBox(height: 10),
-
             Text("Last Purchase: ${cust['lastDate'] ?? '-'}"),
 
             const Divider(),
 
-            // 📄 LEFT → INVOICES LIST
             Expanded(
               child: ListView.builder(
                 itemCount: invoices.length,
@@ -200,7 +189,6 @@ class _CustomerDetailsState extends State<CustomerDetails> {
               ),
             ),
 
-            // ⚡ ACTIONS
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -214,7 +202,7 @@ class _CustomerDetailsState extends State<CustomerDetails> {
                 ),
                 ElevatedButton(
                   onPressed: () => createInvoice(cust),
-                  child: const Text("Create Invoice"),
+                  child: const Text("Email"),
                 ),
               ],
             ),
@@ -231,126 +219,182 @@ class _CustomerDetailsState extends State<CustomerDetails> {
 
       body: Column(
         children: [
-          //  SEARCH
-          Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: TextField(
-                    controller: searchController,
-                    onChanged: searchCustomer,
-                    decoration: InputDecoration(
-                      hintText: "Search Customer",
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
+          // SEARCH ONLY (dropdown removed)
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: TextField(
+              controller: searchController,
+              onChanged: searchCustomer,
+              decoration: InputDecoration(
+                hintText: "Search Customer",
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-
-              // 📂 VIEW DROPDOWN
-              Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: DropdownButton<String>(
-                    value: selectedView,
-                    underline: const SizedBox(),
-                    icon: const Icon(Icons.view_module),
-                    items: const [
-                      DropdownMenuItem(value: "Small", child: Text("Small")),
-                      DropdownMenuItem(value: "Medium", child: Text("Medium")),
-                      DropdownMenuItem(value: "Large", child: Text("Large")),
-                      DropdownMenuItem(value: "List", child: Text("List")),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        selectedView = value!;
-                      });
-                    },
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
 
-          // 👥 LIST
+          //  INVOICE STYLE GRID
           Expanded(
-            child: selectedView == "List"
-                ? ListView.builder(
-                    itemCount: filteredCustomers.length,
-                    itemBuilder: (context, index) {
-                      final cust = filteredCustomers[index];
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                double boxSize = 5 * 37.8; // 👉 same as invoice (5cm)
 
-                      return Card(
-                        child: ListTile(
-                          onTap: () => showCustomerPopup(cust),
-                          title: Text(
-                            cust['receiverName'],
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(
-                            "Pending: ₹ ${cust['totalPending'] ?? 0}",
-                          ),
-                          trailing: Text(
-                            "₹ ${cust['totalSpent'] ?? 0}",
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                int crossAxisCount = (constraints.maxWidth / boxSize)
+                    .floor()
+                    .clamp(1, 10);
+
+                return GridView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  itemCount: filteredCustomers.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: 0.90, //  perfect square
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                  ),
+                  itemBuilder: (context, index) {
+                    final cust = filteredCustomers[index];
+
+                    return GestureDetector(
+                      onTap: () => showCustomerPopup(cust),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.2),
+                              blurRadius: 4,
                             ),
-                          ),
+                          ],
                         ),
-                      );
-                    },
-                  )
-                : GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: selectedView == "Small"
-                          ? 5
-                          : selectedView == "Medium"
-                          ? 3
-                          : 2,
-                      childAspectRatio: 1,
-                    ),
-                    itemCount: filteredCustomers.length,
-                    itemBuilder: (context, index) {
-                      final cust = filteredCustomers[index];
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Dynamic Customer ID and Name karvanu che
+                            const Text(
+                              "CUST-001",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
 
-                      return GestureDetector(
-                        onTap: () => showCustomerPopup(cust),
-                        child: Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                            const SizedBox(height: 2),
+
+                            Text(
+                              cust['receiverName'] ?? '',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            Row(
                               children: [
-                                Text(
-                                  cust['receiverName'],
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                const Icon(
+                                  Icons.location_on,
+                                  size: 14,
+                                  color: Colors.pink,
                                 ),
-                                const SizedBox(height: 5),
-                                Text("₹ ${cust['totalSpent'] ?? 0}"),
-                                Text(
-                                  "Pending: ₹ ${cust['totalPending'] ?? 0}",
-                                  style: const TextStyle(color: Colors.red),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: Text(
+                                    "Pune, Maharashtra (27)", //  later dynamic karvanu che
+                                    style: const TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
+
+                            const SizedBox(height: 5),
+
+                            // Phone
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.phone,
+                                  size: 14,
+                                  color: Colors.pink,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  "9876543210", //  dynamic karvanu che
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            Text(
+                              "GSTIN: 27ABCDE1234F1Z5",
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
+
+                            const SizedBox(height: 3),
+
+                            const Spacer(),
+
+                            Row(
+                              children: [
+                                const Text(
+                                  "Total",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "₹ ${cust['totalSpent'] ?? 0}",
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 4),
+
+                            Row(
+                              children: [
+                                const Text(
+                                  "Pending",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "₹ ${cust['totalPending'] ?? 0}",
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
