@@ -22,17 +22,6 @@ class DatabaseHelper {
       path,
       version: 2,
       onCreate: _createDB,
-      onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          await db.execute(
-            "ALTER TABLE invoices ADD COLUMN contactNumber TEXT",
-          );
-          await db.execute(
-            "ALTER TABLE invoices ADD COLUMN whatsappNumber TEXT",
-          );
-          await db.execute("ALTER TABLE invoices ADD COLUMN email TEXT");
-        }
-      },
     );
   }
 

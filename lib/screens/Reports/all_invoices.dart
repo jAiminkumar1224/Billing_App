@@ -81,26 +81,6 @@ class _AllInvoicesState extends State<AllInvoices> {
     });
   }
 
-  /// SECTION FILTER
-  List<Map<String, dynamic>> getSection(String type) {
-    DateTime now = DateTime.now();
-
-    return filteredList.where((inv) {
-      DateTime d = parseDate(inv['invoiceDate']);
-
-      if (type == "today") {
-        return d.day == now.day && d.month == now.month && d.year == now.year;
-      } else if (type == "week") {
-        DateTime start = now.subtract(Duration(days: now.weekday - 1));
-        DateTime end = start.add(const Duration(days: 6));
-        return d.isAfter(start.subtract(const Duration(days: 1))) &&
-            d.isBefore(end.add(const Duration(days: 1)));
-      } else {
-        return true;
-      }
-    }).toList();
-  }
-
   /// GRID CARD
   Widget invoiceCard(Map<String, dynamic> inv) {
     return GestureDetector(
@@ -440,8 +420,6 @@ class _AllInvoicesState extends State<AllInvoices> {
 
   @override
   Widget build(BuildContext context) {
-    final today = getSection("today");
-    final week = getSection("week");
     final all = filteredList;
 
     return Scaffold(
@@ -477,10 +455,6 @@ class _AllInvoicesState extends State<AllInvoices> {
             ),
 
             const SizedBox(height: 10),
-
-            /// SECTIONS
-            buildSection("Today", today),
-            buildSection("This Week", week),
             buildSection("All", all),
           ],
         ),
