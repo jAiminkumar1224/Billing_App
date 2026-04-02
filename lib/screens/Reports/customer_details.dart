@@ -24,15 +24,30 @@ class _CustomerDetailsState extends State<CustomerDetails> {
     final db = await DatabaseHelper.instance.database;
 
     final data = await db.rawQuery('''
-      SELECT receiverName,
-      COUNT(*) as totalInvoices,
-      SUM(netTotal) as totalSpent,
-      0 as totalPending,
-      MAX(invoiceDate) as lastDate
-      FROM invoices
-      GROUP BY receiverName
-      ORDER BY totalSpent DESC
-    ''');
+SELECT 
+  receiverName,
+  MAX(receiverAddress) as receiverAddress,
+  MAX(receiverState) as receiverState,
+  MAX(receiverStateCode) as receiverStateCode,
+  MAX(contactNumber) as contactNumber,
+  MAX(receiverGstin) as receiverGstin,
+
+  COUNT(*) as totalInvoices,
+
+  SUM(netTotal) as totalSpent,
+
+  SUM(CASE 
+      WHEN paymentStatus = 'Pending' 
+      THEN netTotal 
+      ELSE 0 
+  END) as totalPending,
+
+  MAX(invoiceDate) as lastDate
+
+FROM invoices
+GROUP BY receiverName
+ORDER BY totalSpent DESC
+''');
 
     setState(() {
       customers = data;
@@ -193,11 +208,11 @@ class _CustomerDetailsState extends State<CustomerDetails> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: () => showCallPopup(cust['receiverPhone']),
+                  onPressed: () => showCallPopup(cust['contactNumber']),
                   child: const Text("Call"),
                 ),
                 ElevatedButton(
-                  onPressed: () => showWhatsAppPopup(cust['receiverPhone']),
+                  onPressed: () => showWhatsAppPopup(cust['contactNumber']),
                   child: const Text("WhatsApp"),
                 ),
                 ElevatedButton(
@@ -219,7 +234,6 @@ class _CustomerDetailsState extends State<CustomerDetails> {
 
       body: Column(
         children: [
-          // SEARCH ONLY (dropdown removed)
           Padding(
             padding: const EdgeInsets.all(10),
             child: TextField(
@@ -239,7 +253,7 @@ class _CustomerDetailsState extends State<CustomerDetails> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                double boxSize = 5 * 37.8; // 👉 same as invoice (5cm)
+                double boxSize = 5 * 37.8;
 
                 int crossAxisCount = (constraints.maxWidth / boxSize)
                     .floor()
@@ -250,7 +264,7 @@ class _CustomerDetailsState extends State<CustomerDetails> {
                   itemCount: filteredCustomers.length,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
-                    childAspectRatio: 0.90, //  perfect square
+                    childAspectRatio: 0.90,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                   ),
@@ -274,10 +288,9 @@ class _CustomerDetailsState extends State<CustomerDetails> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Dynamic Customer ID and Name karvanu che
-                            const Text(
-                              "CUST-001",
-                              style: TextStyle(
+                            Text(
+                              "CUST-${(index + 1).toString().padLeft(3, '0')}",
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,
                               ),
@@ -305,7 +318,7 @@ class _CustomerDetailsState extends State<CustomerDetails> {
                                 const SizedBox(width: 5),
                                 Expanded(
                                   child: Text(
-                                    "Pune, Maharashtra (27)", //  later dynamic karvanu che
+                                    "${cust['receiverAddress']}, ${cust['receiverState']} (${cust['receiverStateCode']})",
                                     style: const TextStyle(fontSize: 12),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -315,7 +328,6 @@ class _CustomerDetailsState extends State<CustomerDetails> {
 
                             const SizedBox(height: 5),
 
-                            // Phone
                             Row(
                               children: [
                                 const Icon(
@@ -325,7 +337,7 @@ class _CustomerDetailsState extends State<CustomerDetails> {
                                 ),
                                 const SizedBox(width: 5),
                                 Text(
-                                  "9876543210", //  dynamic karvanu che
+                                  cust['contactNumber'] ?? '',
                                   style: const TextStyle(fontSize: 12),
                                 ),
                               ],
@@ -334,7 +346,7 @@ class _CustomerDetailsState extends State<CustomerDetails> {
                             const SizedBox(height: 10),
 
                             Text(
-                              "GSTIN: 27ABCDE1234F1Z5",
+                              "GSTIN: ${cust['receiverGstin'] ?? ''}",
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: Colors.grey,
