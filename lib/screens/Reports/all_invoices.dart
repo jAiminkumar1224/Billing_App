@@ -132,13 +132,19 @@ class _AllInvoicesState extends State<AllInvoices> {
                     Column(
                       children: [
                         const Text("Invoice"),
-                        Text("INV-${inv['invoiceNo']}"),
+                        Text("INV-${inv['invoiceNo']}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                            )),
                       ],
                     ),
                     Column(
                       children: [
                         const Text("Total"),
-                        Text("₹ ${inv['netTotal']}"),
+                        Text("₹ ${inv['netTotal']}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                            )),
                       ],
                     ),
                     Column(
@@ -150,6 +156,7 @@ class _AllInvoicesState extends State<AllInvoices> {
                             color: inv['paymentStatus'] == "Paid"
                                 ? Colors.green
                                 : Colors.red,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -168,7 +175,7 @@ class _AllInvoicesState extends State<AllInvoices> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 5),
 
                 Expanded(
                   child: FutureBuilder(
@@ -191,10 +198,60 @@ class _AllInvoicesState extends State<AllInvoices> {
                         itemBuilder: (_, i) {
                           final item = items[i];
 
-                          return ListTile(
-                            title: Text(item['itemName']),
-                            subtitle: Text("Qty: ${item['qty']}"),
-                            trailing: Text("₹ ${item['amount']}"),
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                /// LEFT SIDE WITH SERIAL NUMBER
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    /// SERIAL NUMBER
+                                    Text(
+                                      "${i + 1}. ",
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+
+                                    /// ITEM DETAILS
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item['itemName'],
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          "Qty: ${item['qty']}",
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+
+                                /// RIGHT SIDE
+                                Text(
+                                  "₹ ${item['amount']}",
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         },
                       );
@@ -250,7 +307,6 @@ class _AllInvoicesState extends State<AllInvoices> {
                           whereArgs: [inv['id']],
                         );
 
-                        /// convert items to controller format (same as print)
                         final items = itemsData;
 
                         await PdfService().downloadBill(
