@@ -41,11 +41,12 @@ class _DataScreenState extends State<DataScreen> {
 
     /// total sales
     var total = await db.rawQuery(
-      "SELECT SUM(netTotal) as total FROM invoices",
+      "SELECT SUM(netTotal) as total FROM invoices WHERE paymentStatus = 'Paid'",
     );
+
     totalSales = total.first['total'] == null
         ? 0
-        : total.first['total'] as double;
+        : (total.first['total'] as num).toDouble();
 
     /// total invoices
     totalInvoices = data.length;

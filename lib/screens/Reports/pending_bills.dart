@@ -46,30 +46,22 @@ class _PendingBillsState extends State<PendingBills> {
     );
 
     if (updated > 0) {
-      /// REMOVE FROM LIST UI
-      setState(() {
-        //pendingList.removeWhere((bill) => bill['id'] == id);
-      });
+      await loadPending(); // reload list
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Bill moved to Sales")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Bill moved to Sales")));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Pending Bills"),
-      ),
+      appBar: AppBar(title: const Text("Pending Bills")),
 
       body: pendingList.isEmpty
           ? const Center(
-              child: Text(
-                "No Pending Bills",
-                style: TextStyle(fontSize: 16),
-              ),
+              child: Text("No Pending Bills", style: TextStyle(fontSize: 16)),
             )
           : ListView.builder(
               itemCount: pendingList.length,
@@ -87,9 +79,7 @@ class _PendingBillsState extends State<PendingBills> {
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
 
-                    subtitle: Text(
-                      "Invoice ${bill['invoiceNo']}",
-                    ),
+                    subtitle: Text("Invoice ${bill['invoiceNo']}"),
 
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
