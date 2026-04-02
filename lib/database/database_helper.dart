@@ -36,6 +36,9 @@ CREATE TABLE invoices (
   receiverGstin TEXT,
   receiverState TEXT,
   receiverStateCode TEXT,
+  contactNumber TEXT,
+  whatsappNumber TEXT,
+  email TEXT,
 
   poNumber TEXT,
   poDate TEXT,

@@ -132,19 +132,19 @@ class _AllInvoicesState extends State<AllInvoices> {
                     Column(
                       children: [
                         const Text("Invoice"),
-                        Text("INV-${inv['invoiceNo']}",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                            )),
+                        Text(
+                          "INV-${inv['invoiceNo']}",
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
                       ],
                     ),
                     Column(
                       children: [
                         const Text("Total"),
-                        Text("₹ ${inv['netTotal']}",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                            )),
+                        Text(
+                          "₹ ${inv['netTotal']}",
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
                       ],
                     ),
                     Column(
@@ -286,6 +286,9 @@ class _AllInvoicesState extends State<AllInvoices> {
                                 discount: inv['discount'],
                                 netTotal: inv['netTotal'],
                                 paymentStatus: inv['paymentStatus'],
+                                contactNumber: '',
+                                whatsappNumber: '',
+                                email: '',
                               ),
                             ),
                           ),

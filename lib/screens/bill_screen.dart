@@ -102,6 +102,9 @@ class _BillScreenState extends State<BillScreen> {
   final receiverAddressController = TextEditingController();
   final receiverGstinController = TextEditingController();
   final receiverStateController = TextEditingController();
+  final contactNumberController = TextEditingController();
+  final whatsappNumberController = TextEditingController();
+  final emailController = TextEditingController();
   late final ScrollController _itemScrollController;
 
   String lastInvoiceNo = "";
@@ -149,6 +152,9 @@ class _BillScreenState extends State<BillScreen> {
       receiverAddressController.text = widget.invoice!.receiverAddress;
       receiverGstinController.text = widget.invoice!.receiverGstin;
       receiverStateController.text = widget.invoice!.receiverState;
+      contactNumberController.text = widget.invoice!.contactNumber;
+      whatsappNumberController.text = widget.invoice!.whatsappNumber;
+      emailController.text = widget.invoice!.email;
 
       poNumberController.text = widget.invoice!.poNumber;
       poDate = DateTime.parse(widget.invoice!.poDate);
@@ -244,6 +250,118 @@ class _BillScreenState extends State<BillScreen> {
   }
 
   Future<void> saveBillToDatabase() async {
+    void showError(String message) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    }
+
+    //    Invoice No
+    if (invoiceNoController.text.trim().isEmpty) {
+      showError("Invoice Number is required");
+      return;
+    }
+
+    //    Invoice Date
+    if (invoiceDate == null) {
+      showError("Invoice Date is required");
+      return;
+    }
+
+    //    State
+    if (stateController.text.trim().isEmpty) {
+      showError("State is required");
+      return;
+    }
+
+    //    State Code
+    if (stateCodeController.text.trim().isEmpty) {
+      showError("State Code is required");
+      return;
+    }
+
+    //    Receiver Name
+    if (receiverNameController.text.trim().isEmpty) {
+      showError("Receiver Name is required");
+      return;
+    }
+
+    //    Receiver Address
+    if (receiverAddressController.text.trim().isEmpty) {
+      showError("Receiver Address is required");
+      return;
+    }
+
+    //    GSTIN
+    if (receiverGstinController.text.trim().isEmpty) {
+      showError("GSTIN is required");
+      return;
+    }
+
+    //    Receiver State
+    if (receiverStateController.text.trim().isEmpty) {
+      showError("Receiver State is required");
+      return;
+    }
+
+    //    ⭐ IMPORTANT (TARO ISSUE)
+    if (receiverStateCodeController.text.trim().isEmpty) {
+      showError("Receiver State Code is required");
+      return;
+    }
+
+    //    Contact Number
+    if (contactNumberController.text.trim().isEmpty) {
+      showError("Contact Number is required");
+      return;
+    }
+
+    //    Email
+    if (emailController.text.trim().isEmpty) {
+      showError("Email is required");
+      return;
+    }
+
+    //    Email Format
+    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(emailController.text)) {
+      showError("Enter valid Email");
+      return;
+    }
+
+    //    PO Number
+    if (poNumberController.text.trim().isEmpty) {
+      showError("PO Number is required");
+      return;
+    }
+
+    //    PO Date
+    if (poDate == null) {
+      showError("PO Date is required");
+      return;
+    }
+
+    if (invoiceNoController.text.trim().isEmpty ||
+        invoiceDate == null ||
+        stateController.text.trim().isEmpty ||
+        stateCodeController.text.trim().isEmpty ||
+        receiverNameController.text.trim().isEmpty ||
+        receiverAddressController.text.trim().isEmpty ||
+        receiverGstinController.text.trim().isEmpty ||
+        receiverStateController.text.trim().isEmpty ||
+        receiverStateCodeController.text.trim().isEmpty ||
+        contactNumberController.text.trim().isEmpty ||
+        emailController.text.trim().isEmpty ||
+        poNumberController.text.trim().isEmpty ||
+        poDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please fill all mandatory fields (*)"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (items.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -255,6 +373,26 @@ class _BillScreenState extends State<BillScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Fill required fields")));
+      return;
+    }
+
+    if (contactNumberController.text.isEmpty || emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Contact Number and Email are required"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(emailController.text)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Enter valid Email"),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
@@ -286,9 +424,12 @@ class _BillScreenState extends State<BillScreen> {
       receiverGstin: receiverGstinController.text,
       receiverState: receiverStateController.text,
       receiverStateCode: receiverStateCodeController.text,
+      contactNumber: contactNumberController.text,
+      whatsappNumber: whatsappNumberController.text,
+      email: emailController.text,
 
       poNumber: poNumberController.text,
-      poDate: poDate!.toIso8601String(),
+      poDate: poDate?.toIso8601String() ?? "",
 
       subtotal: subTotal,
       discount: discountAmount,
@@ -540,7 +681,7 @@ class _BillScreenState extends State<BillScreen> {
                       children: [
                         Expanded(
                           child: SingleChildScrollView(
-                            controller: _itemScrollController, // ✅ ATTACHED
+                            controller: _itemScrollController, //    ATTACHED
                             child: buildItemList(),
                           ),
                         ),
@@ -743,6 +884,28 @@ class _BillScreenState extends State<BillScreen> {
           ],
         ),
 
+        Row(
+          children: [
+            Expanded(
+              child: rowInput(
+                'Contact Number *',
+                contactNumberController,
+                isNumericOnly: true,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: rowInput('Email *', emailController)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: rowInput(
+                'WhatsApp Number',
+                whatsappNumberController,
+                isNumericOnly: true,
+              ),
+            ),
+          ],
+        ),
+
         const Divider(),
         Row(
           children: [
@@ -858,7 +1021,7 @@ class _BillScreenState extends State<BillScreen> {
     return Padding(
       padding: const EdgeInsets.only(
         bottom: 6,
-        right: 340, // ✅ SAME SPACE AS ITEM LIST (FOR SUMMARY BOX)
+        right: 340, //    SAME SPACE AS ITEM LIST (FOR SUMMARY BOX)
       ),
       child: Row(
         children: const [
@@ -973,7 +1136,7 @@ class _BillScreenState extends State<BillScreen> {
               const SizedBox(width: 6),
               Expanded(
                 child: TextField(
-                  controller: item.uomController, // ✅ NEW
+                  controller: item.uomController, //    NEW
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     isDense: true,

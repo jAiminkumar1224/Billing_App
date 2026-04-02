@@ -9,6 +9,9 @@ class InvoiceModel {
   String receiverGstin;
   String receiverState;
   String receiverStateCode;
+  String contactNumber;
+  String whatsappNumber;
+  String email;
   String poNumber;
   String poDate;
   double subtotal;
@@ -16,19 +19,22 @@ class InvoiceModel {
   double netTotal;
   String paymentStatus;
 
-  
-
   InvoiceModel({
     this.id,
     required this.invoiceNo,
     required this.invoiceDate,
     required this.state,
+
     required this.stateCode,
     required this.receiverName,
     required this.receiverAddress,
     required this.receiverGstin,
     required this.receiverState,
     required this.receiverStateCode,
+    required this.contactNumber,
+    required this.whatsappNumber,
+    required this.email,
+    
     required this.poNumber,
     required this.poDate,
     required this.subtotal,
@@ -48,6 +54,9 @@ class InvoiceModel {
       'receiverGstin': receiverGstin,
       'receiverState': receiverState,
       'receiverStateCode': receiverStateCode,
+      'contactNumber': contactNumber,
+      'whatsappNumber': whatsappNumber,
+      'email': email,
       'poNumber': poNumber,
       'poDate': poDate,
       'subtotal': subtotal,
