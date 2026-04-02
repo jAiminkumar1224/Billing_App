@@ -303,8 +303,7 @@ class _BillScreenState extends State<BillScreen> {
       showError("Receiver State is required");
       return;
     }
-
-    //    ⭐ IMPORTANT (TARO ISSUE)
+    //    Receiver State Code
     if (receiverStateCodeController.text.trim().isEmpty) {
       showError("Receiver State Code is required");
       return;
