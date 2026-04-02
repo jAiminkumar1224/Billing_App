@@ -663,28 +663,24 @@ class _BillScreenState extends State<BillScreen> {
           children: [
             /// HEADER (NO SCROLL)
             buildHeaderInputs(),
-            const SizedBox(height: 16),
             buildItemHeader(),
-            const Divider(),
 
             /// MAIN CONTENT
             Expanded(
               child: Stack(
                 children: [
-                  /// ITEMS LIST (ONLY THIS SCROLLS)
                   Padding(
                     padding: const EdgeInsets.only(
                       right: 340,
-                    ), // space for summary
+                    ), 
                     child: Column(
                       children: [
                         Expanded(
                           child: SingleChildScrollView(
-                            controller: _itemScrollController, //    ATTACHED
+                            controller: _itemScrollController,
                             child: buildItemList(),
                           ),
                         ),
-
                         buildAddItemButton(),
                       ],
                     ),
@@ -696,7 +692,7 @@ class _BillScreenState extends State<BillScreen> {
                     bottom: 0,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [buildPaymentStatus(), buildSummary()],
+                      children: [buildSummary()],
                     ),
                   ),
                 ],
@@ -838,7 +834,6 @@ class _BillScreenState extends State<BillScreen> {
             ),
           ],
         ),
-        const Divider(),
         Row(
           children: [
             Expanded(
@@ -905,7 +900,6 @@ class _BillScreenState extends State<BillScreen> {
           ],
         ),
 
-        const Divider(),
         Row(
           children: [
             Expanded(
@@ -1195,49 +1189,6 @@ class _BillScreenState extends State<BillScreen> {
     );
   }
 
-  Widget buildPaymentStatus() {
-    return Container(
-      width: 250,
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          const Text("Payment:", style: TextStyle(fontWeight: FontWeight.w600)),
-
-          const SizedBox(width: 10),
-
-          Radio<String>(
-            value: "Pending",
-            groupValue: paymentStatus,
-            onChanged: (value) {
-              setState(() {
-                paymentStatus = value!;
-              });
-            },
-          ),
-          const Text("Pending"),
-
-          const SizedBox(width: 10),
-
-          Radio<String>(
-            value: "Paid",
-            groupValue: paymentStatus,
-            onChanged: (value) {
-              setState(() {
-                paymentStatus = value!;
-              });
-            },
-          ),
-          const Text("Paid"),
-        ],
-      ),
-    );
-  }
 
   Widget buildSummary() {
     return Align(
