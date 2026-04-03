@@ -414,9 +414,26 @@ class _BillScreenState extends State<BillScreen> {
     }
 
     if (items.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Add at least one item")));
+      showError("Add at least one item");
+      return;
+    }
+
+    bool hasValidItem = false;
+
+    for (var item in items) {
+      String name = item.nameController.text.trim();
+      String uom = item.uomController.text.trim();
+      int qty = int.tryParse(item.qtyController.text) ?? 0;
+      double rate = double.tryParse(item.rateController.text) ?? 0;
+
+      if (name.isNotEmpty && uom.isNotEmpty && qty > 0 && rate > 0) {
+        hasValidItem = true;
+        break;
+      }
+    }
+
+    if (!hasValidItem) {
+      showError("Enter at least one valid item with all details");
       return;
     }
 
@@ -1240,6 +1257,11 @@ class _BillScreenState extends State<BillScreen> {
                   textAlign: TextAlign.left,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onTap: () {
+                    if (item.qtyController.text == "1") {
+                      item.qtyController.clear();
+                    }
+                  },
                   onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
@@ -1258,6 +1280,11 @@ class _BillScreenState extends State<BillScreen> {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
                   ],
+                  onTap: () {
+                    if (item.rateController.text == "0") {
+                      item.rateController.clear();
+                    }
+                  },
                   onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
@@ -1391,12 +1418,20 @@ class _BillScreenState extends State<BillScreen> {
                       width: 80,
                       child: TextField(
                         controller: discountController,
+                        textAlign: TextAlign.right, // IMPORTANT
                         keyboardType: TextInputType.number,
                         inputFormatters: [
                           FilteringTextInputFormatter.allow(
                             RegExp(r'^\d*\.?\d*$'),
                           ),
                         ],
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 8,
+                          ),
+                        ),
                         onChanged: (value) {
                           double discount = double.tryParse(value) ?? 0;
 
