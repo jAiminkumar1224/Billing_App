@@ -91,6 +91,20 @@ class BillItem {
   }
 }
 
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return TextEditingValue(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+      composing: newValue.composing,
+    );
+  }
+}
+
 class _BillScreenState extends State<BillScreen> {
   final invoiceNoController = TextEditingController();
   DateTime? invoiceDate;
@@ -293,8 +307,18 @@ class _BillScreenState extends State<BillScreen> {
     }
 
     //    GSTIN
-    if (receiverGstinController.text.trim().isEmpty) {
+    String gstin = receiverGstinController.text.trim().toUpperCase();
+
+    if (gstin.isEmpty) {
       showError("GSTIN is required");
+      return;
+    }
+
+    // GSTIN FORMAT VALIDATION
+    if (!RegExp(
+      r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$',
+    ).hasMatch(gstin)) {
+      showError("Enter valid GSTIN");
       return;
     }
 
@@ -670,9 +694,7 @@ class _BillScreenState extends State<BillScreen> {
               child: Stack(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(
-                      right: 340,
-                    ), 
+                    padding: const EdgeInsets.only(right: 340),
                     child: Column(
                       children: [
                         Expanded(
@@ -848,10 +870,32 @@ class _BillScreenState extends State<BillScreen> {
             Expanded(
               child: Column(
                 children: [
-                  rowInput(
-                    'GSTIN/UIN*',
-                    receiverGstinController,
-                    alphaNumericOnly: true,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: TextField(
+                      controller: receiverGstinController,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'[a-zA-Z0-9]'),
+                        ),
+                        UpperCaseTextFormatter(),
+                      ],
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                        label: Text.rich(
+                          TextSpan(
+                            text: 'GSTIN/UIN',
+                            children: [
+                              TextSpan(
+                                text: '*',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   Row(
                     children: [
@@ -1188,7 +1232,6 @@ class _BillScreenState extends State<BillScreen> {
       ),
     );
   }
-
 
   Widget buildSummary() {
     return Align(
