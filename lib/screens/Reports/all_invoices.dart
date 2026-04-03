@@ -82,6 +82,7 @@ class _AllInvoicesState extends State<AllInvoices> {
 
   /// GRID CARD
   Widget invoiceCard(Map<String, dynamic> inv) {
+    bool isPaid = inv['paymentStatus'] == "Payment Received";
     return GestureDetector(
       onTap: () {
         showModalBottomSheet(

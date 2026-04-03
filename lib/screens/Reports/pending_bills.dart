@@ -22,6 +22,92 @@ class _PendingBillsState extends State<PendingBills> {
     loadPending();
   }
 
+  
+
+  void showPaymentPopup(Map<String, dynamic> bill) {
+    TextEditingController amountController = TextEditingController();
+    String errorText = "";
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              title: const Text("Confirm Payment"),
+
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  /// Bill Amount
+                  Text(
+                    "Bill Amount: ₹ ${bill['netTotal']}",
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /// Input Field
+                  TextField(
+                    controller: amountController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "Enter Received Amount",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  /// Error Message
+                  if (errorText.isNotEmpty)
+                    Text(
+                      errorText,
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                ],
+              ),
+
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+
+                ElevatedButton(
+                  onPressed: () async {
+                    double entered =
+                        double.tryParse(amountController.text) ?? 0;
+
+                    double actual = ((bill['netTotal'] as num?) ?? 0)
+                        .toDouble();
+
+                    if (entered == actual) {
+                      Navigator.pop(context);
+
+                      await markAsPaid(bill['id']);
+                    } else {
+                      setState(() {
+                        errorText = "Amount does not match bill amount!";
+                      });
+                    }
+                  },
+                  child: const Text("Confirm"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+  
+
   /// LOAD ALL PENDING BILLS
   Future<void> loadPending() async {
     final db = await DatabaseHelper.instance.database;
@@ -47,14 +133,13 @@ class _PendingBillsState extends State<PendingBills> {
 
   /// SEARCH FUNCTION
   void filterSearch(String value) {
-    final results =
-        pendingList.where((bill) {
-          final name = (bill['receiverName'] ?? "").toString().toLowerCase();
-          final invoice = (bill['invoiceNo'] ?? "").toString().toLowerCase();
+    final results = pendingList.where((bill) {
+      final name = (bill['receiverName'] ?? "").toString().toLowerCase();
+      final invoice = (bill['invoiceNo'] ?? "").toString().toLowerCase();
 
-          return name.contains(value.toLowerCase()) ||
-              invoice.contains(value.toLowerCase());
-        }).toList();
+      return name.contains(value.toLowerCase()) ||
+          invoice.contains(value.toLowerCase());
+    }).toList();
 
     setState(() {
       filteredList = results;
@@ -75,9 +160,9 @@ class _PendingBillsState extends State<PendingBills> {
     if (updated > 0) {
       await loadPending();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Bill moved to Sales")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Bill moved to Sales")));
     }
   }
 
@@ -180,9 +265,7 @@ class _PendingBillsState extends State<PendingBills> {
                                 const SizedBox(height: 4),
                                 Text(
                                   "Invoice: ${bill['invoiceNo']} | ${formatDate(bill['invoiceDate'])}",
-                                  style: const TextStyle(
-                                    color: Colors.black54,
-                                  ),
+                                  style: const TextStyle(color: Colors.black54),
                                 ),
                               ],
                             ),
@@ -200,7 +283,7 @@ class _PendingBillsState extends State<PendingBills> {
                                 const SizedBox(height: 6),
 
                                 GestureDetector(
-                                  onTap: () => markAsPaid(bill['id']),
+                                  onTap: () => showPaymentPopup(bill),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
