@@ -213,6 +213,7 @@ class _BillScreenState extends State<BillScreen> {
       receiverAddressController.text = widget.invoice!.receiverAddress;
       receiverGstinController.text = widget.invoice!.receiverGstin;
       receiverStateController.text = widget.invoice!.receiverState;
+      receiverStateCodeController.text = widget.invoice!.receiverStateCode;
       contactNumberController.text = widget.invoice!.contactNumber;
       whatsappNumberController.text = widget.invoice!.whatsappNumber;
       emailController.text = widget.invoice!.email;

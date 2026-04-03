@@ -22,9 +22,8 @@ class _AllInvoicesState extends State<AllInvoices> {
   @override
   void initState() {
     super.initState();
-    loadInvoices(); 
+    loadInvoices();
   }
-
 
   /// DATE FORMAT
   String formatDate(dynamic date) {
@@ -72,7 +71,6 @@ class _AllInvoicesState extends State<AllInvoices> {
             );
       }).toList();
     }
-
     if (statusFilter != "All") {
       temp = temp.where((inv) => inv['paymentStatus'] == statusFilter).toList();
     }
@@ -90,161 +88,168 @@ class _AllInvoicesState extends State<AllInvoices> {
           context: context,
           isScrollControlled: true,
           builder: (_) => Container(
-            height: MediaQuery.of(context).size.height * 0.8,
-            padding: const EdgeInsets.all(12),
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Text(
-                    inv['receiverName'] ?? "",
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                /// 🔵 HEADER (SMART)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
                     ),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        inv['receiverName'] ?? "",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            children: [
+                              const Text(
+                                "Invoice",
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              Text(
+                                "INV-${inv['invoiceNo']}",
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              const Text(
+                                "Total",
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              Text(
+                                "₹ ${inv['netTotal']}",
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              const Text(
+                                "Status",
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              Text(
+                                inv['paymentStatus'],
+                                style: TextStyle(
+                                  color:
+                                      inv['paymentStatus'] == "Payment Received"
+                                      ? Colors.greenAccent
+                                      : Colors.redAccent,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      Text(
+                        "Date: ${formatDate(inv['invoiceDate'])}",
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ],
                   ),
                 ),
 
-                const SizedBox(height: 10),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Column(
+                /// 📄 BODY
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Invoice"),
-                        Text(
-                          "INV-${inv['invoiceNo']}",
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        const Text("Total"),
-                        Text(
-                          "₹ ${inv['netTotal']}",
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        const Text("Status"),
-                        Text(
-                          inv['paymentStatus'],
+                        const Text(
+                          "Items",
                           style: TextStyle(
-                            color: inv['paymentStatus'] == "Payment Received"
-                                ? Colors.green
-                                : Colors.red,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Expanded(
+                          child: FutureBuilder(
+                            future: DatabaseHelper.instance.database.then((db) {
+                              return db.query(
+                                'invoice_items',
+                                where: 'invoiceId = ?',
+                                whereArgs: [inv['id']],
+                              );
+                            }),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+
+                              final items =
+                                  snapshot.data as List<Map<String, dynamic>>;
+
+                              return ListView.builder(
+                                itemCount: items.length,
+                                itemBuilder: (_, i) {
+                                  final item = items[i];
+
+                                  return Card(
+                                    elevation: 2,
+                                    margin: const EdgeInsets.symmetric(
+                                      vertical: 5,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: ListTile(
+                                      title: Text(item['itemName']),
+                                      subtitle: Text("Qty: ${item['qty']}"),
+                                      trailing: Text("₹ ${item['amount']}"),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-
-                Text("Date: ${formatDate(inv['invoiceDate'])}"),
-
-                const Divider(),
-
-                const Text(
-                  "Items",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-
-                const SizedBox(height: 5),
-
-                Expanded(
-                  child: FutureBuilder(
-                    future: DatabaseHelper.instance.database.then((db) {
-                      return db.query(
-                        'invoice_items',
-                        where: 'invoiceId = ?',
-                        whereArgs: [inv['id']],
-                      );
-                    }),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      final items = snapshot.data as List<Map<String, dynamic>>;
-
-                      return ListView.builder(
-                        itemCount: items.length,
-                        itemBuilder: (_, i) {
-                          final item = items[i];
-
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                /// LEFT SIDE WITH SERIAL NUMBER
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    /// SERIAL NUMBER
-                                    Text(
-                                      "${i + 1}. ",
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-
-                                    /// ITEM DETAILS
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item['itemName'],
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          "Qty: ${item['qty']}",
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-
-                                /// RIGHT SIDE
-                                Text(
-                                  "₹ ${item['amount']}",
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
                   ),
                 ),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () async {
+                /// 🔘 BUTTONS
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      actionBtn("Edit Bill", Icons.edit, () async {
                         Navigator.pop(context);
                         final result = await Navigator.push(
                           context,
@@ -260,29 +265,26 @@ class _AllInvoicesState extends State<AllInvoices> {
                                 receiverAddress: inv['receiverAddress'],
                                 receiverGstin: inv['receiverGstin'],
                                 receiverState: inv['receiverState'],
-                                receiverStateCode: inv['receiverStateCode'],
+                                receiverStateCode:
+                                    inv['receiverStateCode'] ?? '',
                                 poNumber: inv['poNumber'],
                                 poDate: inv['poDate'],
                                 subtotal: inv['subtotal'],
                                 discount: inv['discount'],
                                 netTotal: inv['netTotal'],
                                 paymentStatus: inv['paymentStatus'],
-                                contactNumber: '',
-                                whatsappNumber: '',
-                                email: '',
+                                contactNumber: inv['contactNumber'] ?? '',
+                                whatsappNumber: inv['whatsappNumber'] ?? '',
+                                email: inv['email'] ?? '',
                               ),
                             ),
                           ),
                         );
 
-                        if (result == true) {
-                          loadInvoices();
-                        }
-                      },
-                      child: const Text("Edit Bill"),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
+                        if (result == true) loadInvoices();
+                      }),
+
+                      actionBtn("Download PDF", Icons.picture_as_pdf, () async {
                         final db = await DatabaseHelper.instance.database;
 
                         final itemsData = await db.query(
@@ -290,8 +292,6 @@ class _AllInvoicesState extends State<AllInvoices> {
                           where: 'invoiceId = ?',
                           whereArgs: [inv['id']],
                         );
-
-                        final items = itemsData;
 
                         await PdfService().downloadBill(
                           invoiceNo: inv['invoiceNo'].toString(),
@@ -305,22 +305,19 @@ class _AllInvoicesState extends State<AllInvoices> {
                           receiverGstin: inv['receiverGstin'],
                           poNumber: inv['poNumber'],
                           poDate: parseDate(inv['poDate']),
-                          items: items,
+                          items: itemsData,
                           subTotal: inv['subtotal'],
                           discountAmount: inv['discount'],
                           netTotal: inv['netTotal'],
-                          discountPercentText: "0", // adjust if needed
+                          discountPercentText: "0",
                         );
-                      },
-                      child: const Text("Download PDF"),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
+                      }),
+
+                      actionBtn("Print Bill", Icons.print, () {
                         printInvoiceFromDb(inv);
-                      },
-                      child: const Text("Print"),
-                    ),
-                  ],
+                      }),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -372,6 +369,26 @@ class _AllInvoicesState extends State<AllInvoices> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget actionBtn(String title, IconData icon, VoidCallback onTap) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.blue, size: 26),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(title, style: const TextStyle(fontSize: 13)),
+      ],
     );
   }
 
