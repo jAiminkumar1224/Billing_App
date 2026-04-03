@@ -151,6 +151,7 @@ class _BillScreenState extends State<BillScreen> {
   final contactNumberController = TextEditingController();
   final whatsappNumberController = TextEditingController();
   final emailController = TextEditingController();
+
   late final ScrollController _itemScrollController;
 
   String lastInvoiceNo = "";
@@ -183,6 +184,20 @@ class _BillScreenState extends State<BillScreen> {
   @override
   void initState() {
     super.initState();
+
+    if (widget.customerData != null) {
+      final data = widget.customerData!;
+
+      receiverNameController.text = data['receiverName'] ?? '';
+      receiverAddressController.text = data['receiverAddress'] ?? '';
+      receiverStateController.text = data['receiverState'] ?? '';
+      receiverStateCodeController.text = data['receiverStateCode'] ?? '';
+      contactNumberController.text = data['contactNumber'] ?? '';
+      receiverGstinController.text = data['receiverGstin'] ?? '';
+      emailController.text = data['email'] ?? '';
+      whatsappNumberController.text = data['whatsappNumber'] ?? '';
+      poNumberController.text = data['poNumber'] ?? '';
+    }
 
     _itemScrollController = ScrollController();
 

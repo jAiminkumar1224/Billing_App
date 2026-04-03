@@ -1,5 +1,6 @@
 import 'package:billing_app/screens/bill_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../database/database_helper.dart';
 
 class CustomerDetails extends StatefulWidget {
@@ -31,9 +32,20 @@ SELECT
   MAX(receiverStateCode) as receiverStateCode,
   MAX(contactNumber) as contactNumber,
   MAX(receiverGstin) as receiverGstin,
+  MAX(email) as email,
+  MAX(whatsappNumber) as whatsappNumber,
+
+  (
+    SELECT poNumber 
+    FROM invoices i2 
+    WHERE i2.receiverName = invoices.receiverName 
+    AND poNumber IS NOT NULL 
+    AND poNumber != ''
+    ORDER BY id DESC 
+    LIMIT 1
+  ) as poNumber,
 
   COUNT(*) as totalInvoices,
-
   SUM(netTotal) as totalSpent,
 
   SUM(CASE 
@@ -46,14 +58,15 @@ SELECT
 
 FROM invoices
 GROUP BY receiverName
-ORDER BY totalSpent DESC
-''');
+ORDER BY totalSpent DESC''');
 
     setState(() {
       customers = data;
       filteredCustomers = data;
     });
   }
+
+  String? whatsappNumber;
 
   void searchCustomer(String query) {
     final result = customers.where((cust) {
@@ -71,7 +84,13 @@ ORDER BY totalSpent DESC
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("Call Customer"),
-        content: Text("Phone: $phone"),
+        content: Row(
+          children: [
+            Icon(Icons.phone, color: Colors.green),
+            const SizedBox(width: 10),
+            Text(phone),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -82,30 +101,69 @@ ORDER BY totalSpent DESC
     );
   }
 
-  void showWhatsAppPopup(String phone) {
+  void showWhatsAppPopup(Map<String, dynamic> cust) {
+    String existingNumber = cust['whatsappNumber'] ?? '';
+
+    TextEditingController controller = TextEditingController(
+      text: existingNumber,
+    );
+
+    bool isNumberSaved = existingNumber.trim().isNotEmpty;
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("WhatsApp Customer"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text("Number: $phone"),
-            const SizedBox(height: 10),
-            const TextField(
-              decoration: InputDecoration(
-                hintText: "Type Message...",
-                border: OutlineInputBorder(),
+        content: isNumberSaved
+            ? Row(
+                children: [
+                  const Icon(Icons.message, color: Colors.green),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      existingNumber,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              )
+            : TextField(
+                controller: controller,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  hintText: "Enter WhatsApp Number",
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Send"),
-          ),
-        ],
+        actions: isNumberSaved
+            ? [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Close"),
+                ),
+              ]
+            : [
+                TextButton(
+                  onPressed: () async {
+                    if (controller.text.trim().isEmpty) return;
+
+                    final db = await DatabaseHelper.instance.database;
+
+                    await db.rawUpdate(
+                      '''
+                    UPDATE invoices 
+                    SET whatsappNumber = ? 
+                    WHERE receiverName = ?
+                    ''',
+                      [controller.text.trim(), cust['receiverName']],
+                    );
+
+                    Navigator.pop(context);
+                    loadCustomers();
+                  },
+                  child: const Text("Save"),
+                ),
+              ],
       ),
     );
   }
@@ -134,6 +192,61 @@ ORDER BY totalSpent DESC
     );
   }
 
+  //    STAT CARD
+  Widget _statCard(String title, dynamic value, Color color) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(color: Colors.grey.withValues(alpha: 0.2), blurRadius: 5),
+          ],
+        ),
+        child: Column(
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              "₹ ${value ?? 0}",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: color,
+                fontSize: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  //    ACTION BUTTON
+  Widget _actionBtn(String title, IconData icon, VoidCallback onTap) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.blue),
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(title, style: const TextStyle(fontSize: 14)),
+      ],
+    );
+  }
+
   void showCustomerPopup(Map<String, dynamic> cust) async {
     final db = await DatabaseHelper.instance.database;
 
@@ -147,85 +260,250 @@ ORDER BY totalSpent DESC
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Text(
-              cust['receiverName'],
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Column(
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.9,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: DefaultTabController(
+                length: 2,
+                child: Column(
                   children: [
-                    const Text("Total"),
-                    Text(
-                      "₹ ${cust['totalSpent'] ?? 0}",
-                      style: const TextStyle(
+                    //   HERO HEADER
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(30),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
+                        ),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            cust['receiverName'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            "GSTIN: ${cust['receiverGstin'] ?? '-'}",
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            cust['contactNumber'] ?? '',
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    //   FLOATING CARDS
+                    Transform.translate(
+                      offset: const Offset(0, -20),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          children: [
+                            _statCard(
+                              "Total",
+                              cust['totalSpent'],
+                              Colors.black,
+                            ),
+                            _statCard(
+                              "Pending",
+                              cust['totalPending'],
+                              Colors.red,
+                            ),
+                            _statCard(
+                              "Paid",
+                              ((cust['totalSpent'] ?? 0) -
+                                  (cust['totalPending'] ?? 0)),
+                              Colors.green,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    //   TABS
+                    const TabBar(
+                      labelColor: Colors.black,
+                      labelStyle: TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      tabs: [
+                        Tab(text: "Info"),
+                        Tab(text: "Invoices"),
+                      ],
+                    ),
+
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          //   INFO TAB
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Address",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  "${cust['receiverAddress']}, ${cust['receiverState']} (${cust['receiverStateCode']})",
+                                ),
+                                const SizedBox(height: 15),
+
+                                const Text(
+                                  "Email",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+
+                                GestureDetector(
+                                  onTap: () async {
+                                    await Clipboard.setData(
+                                      ClipboardData(text: cust['email'] ?? ""),
+                                    );
+
+                                    setModalState(() => isCopied = true);
+
+                                    Future.delayed(Duration(seconds: 1), () {
+                                      if (mounted) {
+                                        setModalState(() => isCopied = false);
+                                      }
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: Duration(milliseconds: 300),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isCopied
+                                          ? Colors.green.withOpacity(
+                                              0.15,
+                                            ) //      highlight color
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            cust['email'] ?? "-",
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          isCopied
+                                              ? Icons.check
+                                              : Icons.copy, //      icon change
+                                          size: 18,
+                                          color: isCopied
+                                              ? const Color.fromARGB(
+                                                  255,
+                                                  39,
+                                                  120,
+                                                  201,
+                                                )
+                                              : Colors.grey,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          //   INVOICE TAB
+                          ListView.builder(
+                            itemCount: invoices.length,
+                            itemBuilder: (_, i) {
+                              final inv = invoices[i];
+
+                              return ListTile(
+                                title: Text("Invoice #${inv['invoiceNo']}"),
+                                subtitle: Text("₹ ${inv['netTotal']}"),
+                                trailing: Text(
+                                  (inv['paymentStatus'] as String?) ?? '',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: inv['paymentStatus'] == "Pending"
+                                        ? Colors.red
+                                        : Colors.green,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    //   ACTION BUTTONS
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _actionBtn(
+                            "Call",
+                            Icons.phone,
+                            () => showCallPopup(cust['contactNumber']),
+                          ),
+                          _actionBtn(
+                            "WhatsApp",
+                            Icons.message,
+                            () => showWhatsAppPopup(cust),
+                          ),
+                          _actionBtn(
+                            "Invoice",
+                            Icons.add,
+                            () => createInvoice(cust),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                Column(
-                  children: [
-                    const Text("Pending"),
-                    Text(
-                      "₹ ${cust['totalPending'] ?? 0}",
-                      style: const TextStyle(fontSize: 18, color: Colors.red),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-            Text("Last Purchase: ${cust['lastDate'] ?? '-'}"),
-
-            const Divider(),
-
-            Expanded(
-              child: ListView.builder(
-                itemCount: invoices.length,
-                itemBuilder: (_, i) {
-                  final inv = invoices[i];
-
-                  return ListTile(
-                    title: Text("Invoice: ${inv['invoiceNo']}"),
-                    subtitle: Text("₹ ${inv['netTotal']}"),
-                  );
-                },
               ),
-            ),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: () => showCallPopup(cust['contactNumber']),
-                  child: const Text("Call"),
-                ),
-                ElevatedButton(
-                  onPressed: () => showWhatsAppPopup(cust['contactNumber']),
-                  child: const Text("WhatsApp"),
-                ),
-                ElevatedButton(
-                  onPressed: () => createInvoice(cust),
-                  child: const Text("Email"),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
+
+  bool isCopied = false;
 
   @override
   Widget build(BuildContext context) {
@@ -280,7 +558,7 @@ ORDER BY totalSpent DESC
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
+                              color: Colors.grey.withValues(alpha: 0.2),
                               blurRadius: 4,
                             ),
                           ],
