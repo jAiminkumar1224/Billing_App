@@ -434,24 +434,20 @@ ORDER BY invoiceDate DESC
         ),
         child: Row(
           children: [
-            SizedBox(
-              width: 140,
-              height: 44,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const BillScreen()),
-                  );
-                },
-                icon: const Icon(Icons.arrow_back, size: 18),
-                label: const Text('Back'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E3A8A),
-                  foregroundColor: Colors.white,
-                ),
-              ),
+          SizedBox(
+            width: 140,
+            height: 44,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BillScreen()),
+                );
+              },
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('New Bill'),
             ),
+          ),
 
             const SizedBox(width: 12),
 
