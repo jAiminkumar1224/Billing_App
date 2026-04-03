@@ -22,28 +22,59 @@ class BillScreen extends StatefulWidget {
   State<BillScreen> createState() => _BillScreenState();
 }
 
-class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
+class AppSidebar extends StatelessWidget {
+  final int selectedIndex;
+
+  const AppSidebar({super.key, required this.selectedIndex});
+
+  Widget buildItem({
+    required BuildContext context,
+    required IconData icon,
+    required int index,
+    required VoidCallback onTap,
+  }) {
+    final isSelected = selectedIndex == index;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFE6F0FF) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            size: 22,
+            color: isSelected
+                ? const Color(0xFF2563EB)
+                : const Color(0xFF6B7280),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Drawer(
+    return Container(
+      width: 70,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(right: BorderSide(color: Colors.grey.shade300)),
+      ),
       child: Column(
         children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Color(0xFF1E3A8A)),
-            child: Align(
-              alignment: Alignment.bottomLeft,
-              child: Text(
-                'Navigation Menu',
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-            ),
-          ),
+          const SizedBox(height: 30),
 
-          ListTile(
-            leading: const Icon(Icons.receipt_long),
-            title: const Text('Billing Screen'),
+          buildItem(
+            context: context,
+            icon: Icons.receipt_long,
+            index: 0,
             onTap: () {
               Navigator.pushReplacement(
                 context,
@@ -52,9 +83,10 @@ class AppDrawer extends StatelessWidget {
             },
           ),
 
-          ListTile(
-            leading: const Icon(Icons.storage),
-            title: const Text('Data Screen'),
+          buildItem(
+            context: context,
+            icon: Icons.storage,
+            index: 1,
             onTap: () {
               Navigator.pushReplacement(
                 context,
@@ -800,17 +832,11 @@ class _BillScreenState extends State<BillScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const AppDrawer(),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E3A8A),
         foregroundColor: Colors.white,
         title: const Text('Billing Screen'),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
+
         actions: [
           TextButton(
             onPressed: saveBillToDatabase,
@@ -819,48 +845,52 @@ class _BillScreenState extends State<BillScreen> {
         ],
       ),
 
-      /// MAIN BODY
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            /// HEADER (NO SCROLL)
-            buildHeaderInputs(),
-            buildItemHeader(),
+      body: Row(
+        children: [
+          const AppSidebar(selectedIndex: 0),
 
-            /// MAIN CONTENT
-            Expanded(
-              child: Stack(
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 340),
-                    child: Column(
+                  buildHeaderInputs(),
+                  buildItemHeader(),
+
+                  Expanded(
+                    child: Stack(
                       children: [
-                        Expanded(
-                          child: SingleChildScrollView(
-                            controller: _itemScrollController,
-                            child: buildItemList(),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 340),
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  controller: _itemScrollController,
+                                  child: buildItemList(),
+                                ),
+                              ),
+                              buildAddItemButton(),
+                            ],
                           ),
                         ),
-                        buildAddItemButton(),
-                      ],
-                    ),
-                  ),
 
-                  /// SUMMARY BOX (FIXED BOTTOM RIGHT)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [buildSummary()],
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [buildSummary()],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
 
       ///  FOOTER BAR
