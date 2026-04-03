@@ -67,7 +67,7 @@ class _PendingBillsState extends State<PendingBills> {
 
     int updated = await db.update(
       'invoices',
-      {'paymentStatus': 'Paid'},
+      {'paymentStatus': 'Payment Received'},
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -211,7 +211,7 @@ class _PendingBillsState extends State<PendingBills> {
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: const Text(
-                                      "Paid",
+                                      "Payment Received",
                                       style: TextStyle(color: Colors.white),
                                     ),
                                   ),

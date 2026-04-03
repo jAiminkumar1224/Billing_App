@@ -118,7 +118,7 @@ class _DataScreenState extends State<DataScreen> {
     final data = await db.query('invoices', orderBy: 'invoiceDate DESC');
 
     var total = await db.rawQuery(
-      "SELECT SUM(netTotal) as total FROM invoices WHERE paymentStatus = 'Paid'",
+      "SELECT SUM(netTotal) as total FROM invoices WHERE paymentStatus = 'Payment Received'",
     );
 
     totalSales = total.first['total'] == null

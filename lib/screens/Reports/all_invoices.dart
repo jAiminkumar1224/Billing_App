@@ -22,8 +22,9 @@ class _AllInvoicesState extends State<AllInvoices> {
   @override
   void initState() {
     super.initState();
-    loadInvoices();
+    loadInvoices(); 
   }
+
 
   /// DATE FORMAT
   String formatDate(dynamic date) {
@@ -133,7 +134,7 @@ class _AllInvoicesState extends State<AllInvoices> {
                         Text(
                           inv['paymentStatus'],
                           style: TextStyle(
-                            color: inv['paymentStatus'] == "Paid"
+                            color: inv['paymentStatus'] == "Payment Received"
                                 ? Colors.green
                                 : Colors.red,
                             fontWeight: FontWeight.w500,
@@ -363,7 +364,7 @@ class _AllInvoicesState extends State<AllInvoices> {
             Text(
               inv['paymentStatus'] ?? "",
               style: TextStyle(
-                color: inv['paymentStatus'] == "Paid"
+                color: inv['paymentStatus'] == "Payment Received"
                     ? Colors.green
                     : Colors.red,
               ),
@@ -449,13 +450,16 @@ class _AllInvoicesState extends State<AllInvoices> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 filterButton("All"),
-                filterButton("Paid"),
+                filterButton("Payment Received"),
                 filterButton("Pending"),
               ],
             ),
 
             const SizedBox(height: 10),
-            buildSection("All", all),
+            buildSection(
+              statusFilter == "All" ? "All Invoices" : statusFilter,
+              all,
+            ),
           ],
         ),
       ),

@@ -67,7 +67,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
     final data = await db.query(
       'invoices',
       where: "paymentStatus = ?",
-      whereArgs: ["Paid"],
+      whereArgs: ["Payment Received"],
       orderBy: "id DESC",
     );
 
@@ -108,7 +108,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
     final data = await db.query(
       "invoices",
       where:
-          "paymentStatus='Paid' AND (invoiceNo LIKE ? OR receiverName LIKE ?)",
+          "paymentStatus='Payment Received' AND (invoiceNo LIKE ? OR receiverName LIKE ?)",
       whereArgs: ["%$value%", "%$value%"],
       orderBy: "id DESC",
     );
@@ -127,7 +127,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
     final data = await db.rawQuery(
       """
 SELECT * FROM invoices
-WHERE paymentStatus='Paid'
+WHERE paymentStatus='Payment Received'
 AND date(invoiceDate) BETWEEN date(?) AND date(?)
 ORDER BY id DESC
 """,
@@ -156,7 +156,7 @@ ORDER BY id DESC
     final data = await db.rawQuery(
       """
 SELECT * FROM invoices
-WHERE paymentStatus='Paid'
+WHERE paymentStatus='Payment Received'
 AND date(invoiceDate) BETWEEN date(?) AND date(?)
 ORDER BY id DESC
 """,
@@ -185,7 +185,7 @@ ORDER BY id DESC
     final data = await db.rawQuery(
       """
 SELECT * FROM invoices
-WHERE paymentStatus='Paid'
+WHERE paymentStatus='Payment Received'
 AND date(invoiceDate) BETWEEN date(?) AND date(?)
 ORDER BY id DESC
 """,
@@ -431,7 +431,7 @@ ORDER BY id DESC
                                       final data = await db.rawQuery(
                                         """
 SELECT * FROM invoices
-WHERE paymentStatus='Paid'
+WHERE paymentStatus='Payment Received'
 AND date(invoiceDate) BETWEEN date(?) AND date(?)
 ORDER BY id DESC
 """,
