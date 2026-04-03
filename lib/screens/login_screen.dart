@@ -120,8 +120,34 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            // same logic
+                          onPressed: () async {
+                            if (keyController.text != 'Aksh_Patel') {
+                              _showMessage('Invalid Key');
+                              return;
+                            }
+
+                            if (usernameController.text != 'admin') {
+                              _showMessage('Invalid Username');
+                              return;
+                            }
+
+                            if (newPasswordController.text.isEmpty ||
+                                confirmPasswordController.text.isEmpty) {
+                              _showMessage('Fill all fields');
+                              return;
+                            }
+
+                            if (newPasswordController.text !=
+                                confirmPasswordController.text) {
+                              _showMessage('Passwords do not match');
+                              return;
+                            }
+
+                            await _saveNewPassword(newPasswordController.text);
+
+                            Navigator.pop(context);
+
+                            _showMessage('Password Reset Successful');
                           },
                           child: const Text('Submit'),
                         ),
@@ -169,10 +195,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _showMessage(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
   final FocusNode keyFocus = FocusNode();
 
   final _formKey = GlobalKey<FormState>();
@@ -192,16 +214,13 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = '';
     });
 
-    final prefs = await SharedPreferences.getInstance();
-    String currentPassword = prefs.getString('password') ?? '1234';
-
     Future.delayed(const Duration(seconds: 1), () {
       setState(() {
         _isLoading = false;
       });
 
       if (_usernameController.text == 'admin' &&
-          _passwordController.text == currentPassword) {
+          _passwordController.text == _savedPassword) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const BillScreen()),
@@ -212,6 +231,12 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     });
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
