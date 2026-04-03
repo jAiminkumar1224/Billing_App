@@ -177,6 +177,7 @@ class _BillScreenState extends State<BillScreen> {
 
       loadItems();
     }
+    addListeners();
 
     invoiceNoController.addListener(() {
       if (invoiceNoController.text.isEmpty) {
@@ -200,6 +201,26 @@ class _BillScreenState extends State<BillScreen> {
         );
       }
     });
+  }
+
+  void addListeners() {
+    void refresh() {
+      if (mounted) setState(() {});
+    }
+
+    invoiceNoController.addListener(refresh);
+    receiverNameController.addListener(refresh);
+    receiverAddressController.addListener(refresh);
+    receiverGstinController.addListener(refresh);
+    receiverStateController.addListener(refresh);
+    receiverStateCodeController.addListener(refresh);
+    contactNumberController.addListener(refresh);
+    whatsappNumberController.addListener(refresh);
+    emailController.addListener(refresh);
+    stateController.addListener(refresh);
+    stateCodeController.addListener(refresh);
+    poNumberController.addListener(refresh);
+    discountController.addListener(refresh);
   }
 
   String normalizeInvoiceNo(String value) {
@@ -333,9 +354,16 @@ class _BillScreenState extends State<BillScreen> {
       return;
     }
 
-    //    Contact Number
-    if (contactNumberController.text.trim().isEmpty) {
+    String contact = contactNumberController.text.trim();
+
+    if (contact.isEmpty) {
       showError("Contact Number is required");
+      return;
+    }
+
+    // Indian Mobile Validation (10 digit, starts with 6-9)
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(contact)) {
+      showError("Enter valid Contact Number");
       return;
     }
 
@@ -612,12 +640,20 @@ class _BillScreenState extends State<BillScreen> {
       invoiceDate = null;
       stateController.clear();
       stateCodeController.clear();
+
       receiverNameController.clear();
       receiverAddressController.clear();
       receiverGstinController.clear();
       receiverStateController.clear();
+      receiverStateCodeController.clear();
+
+      contactNumberController.clear();
+      whatsappNumberController.clear();
+      emailController.clear();
+
       poNumberController.clear();
       poDate = null;
+
       discountController.text = '0';
 
       for (final item in items) {
@@ -880,6 +916,7 @@ class _BillScreenState extends State<BillScreen> {
                         ),
                         UpperCaseTextFormatter(),
                       ],
+                      onChanged: (_) => setState(() {}),
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         isDense: true,
@@ -929,6 +966,7 @@ class _BillScreenState extends State<BillScreen> {
                 'Contact Number *',
                 contactNumberController,
                 isNumericOnly: true,
+                maxLength: 10,
               ),
             ),
             const SizedBox(width: 12),
@@ -939,6 +977,7 @@ class _BillScreenState extends State<BillScreen> {
                 'WhatsApp Number',
                 whatsappNumberController,
                 isNumericOnly: true,
+                maxLength: 10,
               ),
             ),
           ],
@@ -968,11 +1007,20 @@ class _BillScreenState extends State<BillScreen> {
     bool allowOnlyLetters = false,
     bool alphaNumericOnly = false,
     bool checkInvoice = false,
+    int? maxLength,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: TextField(
         controller: controller,
+        maxLength: maxLength,
+        buildCounter:
+            (
+              context, {
+              required int currentLength,
+              required bool isFocused,
+              required int? maxLength,
+            }) => null,
         keyboardType: isNumericOnly ? TextInputType.number : TextInputType.text,
         inputFormatters: isNumericOnly
             ? [FilteringTextInputFormatter.digitsOnly]
@@ -1152,7 +1200,7 @@ class _BillScreenState extends State<BillScreen> {
                     border: OutlineInputBorder(),
                     isDense: true,
                     filled: true,
-                    fillColor: Color(0xFFF0F0F0), // light readonly shade
+                    fillColor: Color(0xFFF0F0F0),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -1170,21 +1218,26 @@ class _BillScreenState extends State<BillScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(width: 6),
+
               Expanded(
                 child: TextField(
-                  controller: item.uomController, //    NEW
+                  controller: item.uomController,
+                  textAlign: TextAlign.left,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
                 ),
               ),
+
               const SizedBox(width: 6),
 
               Expanded(
                 child: TextField(
                   controller: item.qtyController,
+                  textAlign: TextAlign.left,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   onChanged: (_) => setState(() {}),
@@ -1194,10 +1247,13 @@ class _BillScreenState extends State<BillScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(width: 6),
+
               Expanded(
                 child: TextField(
                   controller: item.rateController,
+                  textAlign: TextAlign.left,
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
@@ -1209,8 +1265,25 @@ class _BillScreenState extends State<BillScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(width: 6),
-              Expanded(child: Text(item.amount.toStringAsFixed(2))),
+
+              Expanded(
+                child: TextField(
+                  readOnly: true,
+                  controller: TextEditingController(
+                    text: item.amount.toStringAsFixed(2),
+                  ),
+                  textAlign: TextAlign.center,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                    filled: true,
+                    fillColor: Color(0xFFF5F5F5),
+                  ),
+                ),
+              ),
+
               IconButton(
                 onPressed: () => removeItem(index),
                 icon: const Icon(Icons.delete, color: Colors.red),
@@ -1239,19 +1312,74 @@ class _BillScreenState extends State<BillScreen> {
       child: Padding(
         padding: const EdgeInsets.only(right: 15, bottom: 15),
         child: Material(
-          elevation: 4,
-          borderRadius: BorderRadius.circular(8),
+          elevation: 6,
+          borderRadius: BorderRadius.circular(10),
           color: Colors.white,
           child: Container(
-            width: 300,
-            padding: const EdgeInsets.all(14),
+            width: 320,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.grey.shade300),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ================= HEADER DETAILS =================
+                const Text(
+                  "Invoice Summary",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+
+                const SizedBox(height: 10),
+
+                ValueListenableBuilder(
+                  valueListenable: invoiceNoController,
+                  builder: (context, value, _) {
+                    return summaryText("Invoice No", value.text);
+                  },
+                ),
+
+                summaryText(
+                  "Invoice Date",
+                  invoiceDate == null
+                      ? "-"
+                      : "${invoiceDate!.day}/${invoiceDate!.month}/${invoiceDate!.year}",
+                ),
+
+                ValueListenableBuilder(
+                  valueListenable: receiverNameController,
+                  builder: (context, value, _) {
+                    return summaryText("Receiver", value.text);
+                  },
+                ),
+
+                ValueListenableBuilder(
+                  valueListenable: receiverGstinController,
+                  builder: (context, value, _) {
+                    return summaryText("GSTIN", value.text);
+                  },
+                ),
+
+                ValueListenableBuilder(
+                  valueListenable: contactNumberController,
+                  builder: (context, value, _) {
+                    return summaryText("Contact", value.text);
+                  },
+                ),
+
+                ValueListenableBuilder(
+                  valueListenable: emailController,
+                  builder: (context, value, _) {
+                    return summaryText("Email", value.text);
+                  },
+                ),
+                summaryText("Total Items", items.length.toString()),
+
+                const Divider(height: 20),
+
+                // ================= AMOUNT =================
                 summaryRow('Sub Total', subTotal),
 
                 const SizedBox(height: 8),
@@ -1307,6 +1435,28 @@ class _BillScreenState extends State<BillScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget summaryText(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(label, style: const TextStyle(color: Colors.grey)),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value.isEmpty ? "-" : value,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
       ),
     );
   }
