@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
 
@@ -45,6 +45,19 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
     return "${d.day.toString().padLeft(2, '0')}/"
         "${d.month.toString().padLeft(2, '0')}/"
         "${d.year}";
+  }
+
+  Future<void> pickDateAndExport({required bool isPDF}) async {
+    await openDateRangePopup();
+
+    // user e date select kari hoy to j export karvu
+    if (startDate != null && endDate != null) {
+      if (isPDF) {
+        exportSalesPDF();
+      } else {
+        exportSalesExcel();
+      }
+    }
   }
 
   /// LOAD SALES
@@ -311,7 +324,12 @@ ORDER BY id DESC
                       Theme(
                         data: Theme.of(context).copyWith(
                           colorScheme: const ColorScheme.light(
-                            primary: Color.fromARGB(255, 118, 181, 237), // selected circle color
+                            primary: Color.fromARGB(
+                              255,
+                              118,
+                              181,
+                              237,
+                            ), // selected circle color
                             onPrimary: Colors.white, // selected text color
                             onSurface: Colors.black,
                           ),
@@ -460,6 +478,12 @@ ORDER BY id DESC
     loadSales();
   }
 
+  String formatFileDate(DateTime date) {
+    return "${date.day.toString().padLeft(2, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.year}";
+  }
+
   /// DATE FORMATTER
   String showDate(DateTime date) {
     return "${date.day.toString().padLeft(2, '0')}/"
@@ -474,11 +498,9 @@ ORDER BY id DESC
     DateTime toDate;
 
     if (isFilterActive && startDate != null && endDate != null) {
-      /// FILTER CASE
       fromDate = startDate!;
       toDate = endDate!;
     } else {
-      /// NO FILTER → FIRST & LAST BILL
       if (salesList.isNotEmpty) {
         final first = salesList.last['invoiceDate'];
         final last = salesList.first['invoiceDate'];
@@ -491,38 +513,72 @@ ORDER BY id DESC
       }
     }
 
-    final file = await generateSalesReportPDF(
+    final pdfFile = await generateSalesReportPDF(
       itemsList,
       fromDate: fromDate,
       toDate: toDate,
     );
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("PDF Generated: ${file.path}")));
+/// USER SELECT LOCATION
+String fileName;
+
+if (startDate != null && endDate != null) {
+  fileName =
+      "Sales_Report_${formatFileDate(startDate!)}_to_${formatFileDate(endDate!)}.pdf";
+} else {
+  fileName = "Sales_Report.pdf";
+}
+
+String? outputPath = await FilePicker.platform.saveFile(
+  dialogTitle: 'Save PDF',
+  fileName: fileName,
+);
+
+    if (outputPath != null) {
+      final newFile = File(outputPath);
+      await newFile.writeAsBytes(await pdfFile.readAsBytes());
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("PDF saved at: $outputPath")));
+    }
   }
 
-  void exportSalesExcel() async {
-    String csv = "Date,Invoice,Customer,Amount\n";
+void exportSalesExcel() async {
+  String csv = "Date,Invoice,Customer,Amount\n";
 
-    for (var sale in salesList) {
-      csv +=
-          "${formatDate(sale['invoiceDate'])},"
-          "${sale['invoiceNo'].toString()},"
-          "${sale['receiverName'].toString()},"
-          "${sale['netTotal'].toString()}\n";
-    }
+  for (var sale in salesList) {
+    csv +=
+        "${formatDate(sale['invoiceDate'])},"
+        "${sale['invoiceNo']},"
+        "${sale['receiverName']},"
+        "${sale['netTotal']}\n";
+  }
 
-    final dir = await getTemporaryDirectory();
+  /// USER SELECT LOCATION
+  String fileName;
 
-    final file = File("${dir.path}/sales_report.csv");
+  if (startDate != null && endDate != null) {
+    fileName =
+        "Sales_Report_${formatFileDate(startDate!)}_to_${formatFileDate(endDate!)}.csv";
+  } else {
+    fileName = "Sales_Report.csv";
+  }
 
+  String? outputPath = await FilePicker.platform.saveFile(
+    dialogTitle: 'Save Excel',
+    fileName: fileName,
+  );
+
+  if (outputPath != null) {
+    final file = File(outputPath);
     await file.writeAsString(csv);
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text("Excel exported: ${file.path}")));
+    ).showSnackBar(SnackBar(content: Text("Excel saved at: $outputPath")));
   }
+}
 
   DateTime parseDate(dynamic date) {
     if (date is int) {
@@ -603,7 +659,7 @@ ORDER BY id DESC
                       tooltip: "Export as PDF",
                       icon: const Icon(Icons.picture_as_pdf, color: Colors.red),
                       onPressed: () {
-                        exportSalesPDF();
+                        pickDateAndExport(isPDF: true);
                       },
                     ),
 
@@ -614,7 +670,7 @@ ORDER BY id DESC
                       tooltip: "Export as Excel",
                       icon: const Icon(Icons.table_chart, color: Colors.green),
                       onPressed: () {
-                        exportSalesExcel();
+                        pickDateAndExport(isPDF: false);
                       },
                     ),
                   ],
