@@ -509,7 +509,7 @@ class _BillScreenState extends State<BillScreen> {
       if (widget.invoice == null) {
         savedInvoiceId = await db.insert('invoices', invoice.toMap());
       } else {
-        // ✏️ UPDATE
+        //  UPDATE
         savedInvoiceId = widget.invoice!.id;
 
         await db.update(
@@ -628,25 +628,69 @@ class _BillScreenState extends State<BillScreen> {
 
   void removeItem(int index) => setState(() => items.removeAt(index));
 
-  void resetAll() async {
+  Future<void> resetAll() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Confirm Reset'),
-        content: const Text('Are you sure you want to reset all bill details?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 224, 66, 66),
+      builder: (_) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Material(
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.warning_amber_rounded, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text(
+                        'Reset Invoice',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  const Text(
+                    'This will clear all entered invoice details. This action cannot be undone.',
+                    style: TextStyle(color: Colors.black54),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Reset'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            child: const Text('Reset'),
           ),
-        ],
+        ),
       ),
     );
 
@@ -680,35 +724,77 @@ class _BillScreenState extends State<BillScreen> {
     });
   }
 
-  void logout() async {
+  Future<void> logout() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Confirm Logout'),
-        content: const Text(
-          'Are you sure you want to logout?\nUnsaved data will be lost.',
+      builder: (_) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Material(
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.logout, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text(
+                        'Logout',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  const Text(
+                    'This will clear all entered invoice details. This action cannot be undone.',
+                    style: TextStyle(color: Colors.black54),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Logout'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Logout'),
-          ),
-        ],
       ),
     );
-
-    if (confirm != true) return;
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    if (confirm == true) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    }
   }
 
   @override
