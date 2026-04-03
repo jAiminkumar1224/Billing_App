@@ -30,7 +30,7 @@ class _PendingBillsState extends State<PendingBills> {
       'invoices',
       where: "paymentStatus = ?",
       whereArgs: ["Pending"],
-      orderBy: 'invoiceDate DESC',
+      orderBy: 'id DESC',
     );
 
     double total = 0;
