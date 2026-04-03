@@ -22,7 +22,7 @@ Future<File> generateSalesReportPDF(
           children: [
             /// TITLE
             pw.Text(
-              "AKASH ENTERPRISESALES REGISTER",
+              "AKASH ENTERPRISE SALES REGISTER",
               style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
             ),
             pw.Text(

@@ -189,11 +189,9 @@ ORDER BY id DESC
     updateList(data);
   }
 
-  /// CUSTOM DATE RANGE
-  /// CUSTOM DATE RANGE POPUP
   Future<void> openDateRangePopup() async {
-    DateTime? tempStart = startDate;
-    DateTime? tempEnd = endDate;
+    DateTime? tempStart;
+    DateTime? tempEnd;
 
     await showDialog(
       context: context,
@@ -205,113 +203,249 @@ ORDER BY id DESC
             builder: (context, setStateDialog) {
               return SizedBox(
                 width: 400,
-                height: 420,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      /// HEADER
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Select Range",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
 
-                child: Column(
-                  children: [
-                    /// HEADER
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Select Range",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// SELECTED RANGE TEXT
+                      Row(
+                        children: [
+                          /// START DATE
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Start Date",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    tempStart == null
+                                        ? "--/--/----"
+                                        : showDate(tempStart!),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 10),
+
+                          /// END DATE
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "End Date",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    tempEnd == null
+                                        ? "--/--/----"
+                                        : showDate(tempEnd!),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 15),
+
+                      /// CALENDAR
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          colorScheme: const ColorScheme.light(
+                            primary: Color.fromARGB(255, 118, 181, 237), // selected circle color
+                            onPrimary: Colors.white, // selected text color
+                            onSurface: Colors.black,
+                          ),
+                          textButtonTheme: TextButtonThemeData(
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                            ),
+                          ),
+                          splashColor: Colors.blue.withValues(alpha: 0.2),
+                          highlightColor: Colors.blue.withValues(alpha: 0.1),
+
+                          primaryColor: Colors.blue,
+                        ),
+                        child: SizedBox(
+                          height: 300,
+                          child: CalendarDatePicker(
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2100),
+                            onDateChanged: (date) {
+                              setStateDialog(() {
+                                if (tempStart == null) {
+                                  tempStart = date;
+                                } else if (tempEnd == null) {
+                                  tempEnd = date;
+
+                                  if (tempEnd!.isBefore(tempStart!)) {
+                                    final t = tempStart;
+                                    tempStart = tempEnd;
+                                    tempEnd = t;
+                                  }
+                                } else {
+                                  tempStart = date;
+                                  tempEnd = null;
+                                }
+                              });
+                            },
                           ),
                         ),
-
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    /// SELECTED RANGE TEXT
-                    Text(
-                      tempStart == null
-                          ? "Start Date - End Date"
-                          : "${showDate(tempStart!)} → ${tempEnd == null ? '' : showDate(tempEnd!)}",
-                      style: const TextStyle(fontSize: 16),
-                    ),
-
-                    const SizedBox(height: 15),
-
-                    /// CALENDAR
-                    Expanded(
-                      child: CalendarDatePicker(
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2100),
-
-                        onDateChanged: (date) {
-                          setStateDialog(() {
-                            if (tempStart == null) {
-                              tempStart = date;
-                            } else if (tempEnd == null) {
-                              tempEnd = date;
-
-                              if (tempEnd!.isBefore(tempStart!)) {
-                                final t = tempStart;
-                                tempStart = tempEnd;
-                                tempEnd = t;
-                              }
-                            } else {
-                              tempStart = date;
-                              tempEnd = null;
-                            }
-                          });
-                        },
                       ),
-                    ),
 
-                    const SizedBox(height: 10),
+                      const SizedBox(height: 10),
 
-                    /// SAVE BUTTON
-                    SizedBox(
-                      width: double.infinity,
+                      /// SAVE BUTTON
+                      Row(
+                        children: [
+                          /// RESET BUTTON
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                setStateDialog(() {
+                                  tempStart = null;
+                                  tempEnd = null;
+                                });
+                              },
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                side: const BorderSide(color: Colors.blue),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                "Reset",
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ),
 
-                      child: ElevatedButton(
-                        child: const Text("Save"),
+                          const SizedBox(width: 10),
 
-                        onPressed: () async {
-                          if (tempStart != null && tempEnd != null) {
-                            startDate = tempStart;
-                            endDate = tempEnd;
+                          /// SAVE BUTTON
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: (tempStart != null && tempEnd != null)
+                                  ? () async {
+                                      startDate = tempStart;
+                                      endDate = tempEnd;
 
-                            final db = await DatabaseHelper.instance.database;
+                                      final db = await DatabaseHelper
+                                          .instance
+                                          .database;
 
-                            final data = await db.rawQuery(
-                              """
+                                      final data = await db.rawQuery(
+                                        """
 SELECT * FROM invoices
 WHERE paymentStatus='Paid'
 AND date(invoiceDate) BETWEEN date(?) AND date(?)
 ORDER BY id DESC
 """,
-                              [
-                                startDate!.toIso8601String(),
-                                endDate!.toIso8601String(),
-                              ],
-                            );
+                                        [
+                                          startDate!.toIso8601String(),
+                                          endDate!.toIso8601String(),
+                                        ],
+                                      );
 
-                            setState(() {
-                              filterTitle = "Sales for Selected Period";
-                              isFilterActive = true;
-                            });
+                                      setState(() {
+                                        filterTitle =
+                                            "Sales for Selected Period";
+                                        isFilterActive = true;
+                                      });
 
-                            updateList(data);
-
-                            Navigator.pop(context);
-                          }
-                        },
+                                      updateList(data);
+                                      Navigator.pop(context);
+                                    }
+                                  : null,
+                              child: const Text(
+                                "Save",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -333,41 +467,40 @@ ORDER BY id DESC
         "${date.year}";
   }
 
-void exportSalesPDF() async {
-  final itemsList = await DatabaseHelper.instance.getSalesRegisterItems();
+  void exportSalesPDF() async {
+    final itemsList = await DatabaseHelper.instance.getSalesRegisterItems();
 
-  DateTime fromDate;
-  DateTime toDate;
+    DateTime fromDate;
+    DateTime toDate;
 
-  if (isFilterActive && startDate != null && endDate != null) {
-    /// FILTER CASE
-    fromDate = startDate!;
-    toDate = endDate!;
-  } else {
-    /// NO FILTER → FIRST & LAST BILL
-    if (salesList.isNotEmpty) {
-      final first = salesList.last['invoiceDate'];
-      final last = salesList.first['invoiceDate'];
-
-      fromDate = parseDate(first);
-      toDate = parseDate(last);
+    if (isFilterActive && startDate != null && endDate != null) {
+      /// FILTER CASE
+      fromDate = startDate!;
+      toDate = endDate!;
     } else {
-      fromDate = DateTime.now();
-      toDate = DateTime.now();
+      /// NO FILTER → FIRST & LAST BILL
+      if (salesList.isNotEmpty) {
+        final first = salesList.last['invoiceDate'];
+        final last = salesList.first['invoiceDate'];
+
+        fromDate = parseDate(first);
+        toDate = parseDate(last);
+      } else {
+        fromDate = DateTime.now();
+        toDate = DateTime.now();
+      }
     }
+
+    final file = await generateSalesReportPDF(
+      itemsList,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text("PDF Generated: ${file.path}")));
   }
-
-  final file = await generateSalesReportPDF(
-    itemsList,
-    fromDate: fromDate,
-    toDate: toDate,
-  );
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text("PDF Generated: ${file.path}")),
-  );
-}
-
 
   void exportSalesExcel() async {
     String csv = "Date,Invoice,Customer,Amount\n";
@@ -390,13 +523,15 @@ void exportSalesPDF() async {
       context,
     ).showSnackBar(SnackBar(content: Text("Excel exported: ${file.path}")));
   }
-DateTime parseDate(dynamic date) {
-  if (date is int) {
-    return DateTime.fromMillisecondsSinceEpoch(date);
-  } else {
-    return DateTime.parse(date.toString());
+
+  DateTime parseDate(dynamic date) {
+    if (date is int) {
+      return DateTime.fromMillisecondsSinceEpoch(date);
+    } else {
+      return DateTime.parse(date.toString());
+    }
   }
-}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
