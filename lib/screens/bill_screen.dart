@@ -628,7 +628,13 @@ class _BillScreenState extends State<BillScreen> {
         content: const Text("You must save bill before printing"),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () async {
+              await saveBillToDatabase();
+
+              if (mounted) {
+                Navigator.pop(context);
+              }
+            },
             child: const Text("Cancel"),
           ),
           ElevatedButton(
@@ -848,130 +854,183 @@ class _BillScreenState extends State<BillScreen> {
     }
   }
 
+  Future<bool> _onBackPressed() async {
+    bool exit = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: true, 
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+
+          // 🔥 TITLE WITH CLOSE ICON
+          title: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+              const SizedBox(width: 8),
+              const Expanded(child: Text("Exit Bill")),
+
+          
+              InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                },
+                child: const Icon(Icons.close, size: 20),
+              ),
+            ],
+          ),
+
+          content: const Text(
+            "Your data will be lost.\nDo you want to continue?",
+            style: TextStyle(fontSize: 14),
+          ),
+
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); 
+                exit = true; 
+              },
+              child: const Text("Discard", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+
+    return exit;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
-        title: const Text('Billing Screen'),
+    return WillPopScope(
+      onWillPop: _onBackPressed,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF1E3A8A),
+          foregroundColor: Colors.white,
+          title: const Text('Billing Screen'),
 
-        actions: [
-          TextButton(
-            onPressed: saveBillToDatabase,
-            child: const Text('SAVE', style: TextStyle(color: Colors.green)),
-          ),
-        ],
-      ),
-
-      body: Row(
-        children: [
-          const AppSidebar(selectedIndex: 0),
-
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  buildHeaderInputs(),
-                  buildItemHeader(),
-
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 340),
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  controller: _itemScrollController,
-                                  child: buildItemList(),
-                                ),
-                              ),
-                              buildAddItemButton(),
-                            ],
-                          ),
-                        ),
-
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [buildSummary()],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-
-      ///  FOOTER BAR
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              // ignore: deprecated_member_use
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 6,
-              offset: const Offset(0, -2),
+          actions: [
+            TextButton(
+              onPressed: saveBillToDatabase,
+              child: const Text('SAVE', style: TextStyle(color: Colors.green)),
             ),
           ],
         ),
 
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
+        body: Row(
           children: [
-            /// RESET BUTTON
-            SizedBox(
-              width: 140,
-              height: 44,
-              child: ElevatedButton.icon(
-                onPressed: resetAll,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Reset'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E3A8A), // Deep Blue
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
+            const AppSidebar(selectedIndex: 0),
 
-            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    buildHeaderInputs(),
+                    buildItemHeader(),
 
-            /// LOGOUT BUTTON
-            SizedBox(
-              width: 140,
-              height: 44,
-              child: ElevatedButton.icon(
-                onPressed: logout,
-                icon: const Icon(Icons.logout, size: 18),
-                label: const Text('Logout'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFDC2626), // Soft Red
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 340),
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    controller: _itemScrollController,
+                                    child: buildItemList(),
+                                  ),
+                                ),
+                                buildAddItemButton(),
+                              ],
+                            ),
+                          ),
+
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [buildSummary()],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ],
+        ),
+
+        ///  FOOTER BAR
+        bottomNavigationBar: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                // ignore: deprecated_member_use
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 6,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              /// RESET BUTTON
+              SizedBox(
+                width: 140,
+                height: 44,
+                child: ElevatedButton.icon(
+                  onPressed: resetAll,
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Reset'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E3A8A), // Deep Blue
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    textStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              /// LOGOUT BUTTON
+              SizedBox(
+                width: 140,
+                height: 44,
+                child: ElevatedButton.icon(
+                  onPressed: logout,
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: const Text('Logout'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFDC2626), // Soft Red
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    textStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
