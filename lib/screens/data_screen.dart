@@ -243,116 +243,78 @@ ORDER BY invoiceDate DESC
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
+                  /// ================= TOP SECTION =================
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _card(
-                        "Total Sales",
-                        "₹ $totalSales",
-                        Icons.currency_rupee,
-                        Colors.green,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SalesReportScreen(),
-                            ),
-                          ).then((_) {
-                            loadAllData();
-                          });
-                        },
-                      ),
-                      _card(
-                        "Invoices",
-                        "$totalInvoices",
-                        Icons.receipt,
-                        Colors.blue,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AllInvoices(),
-                            ),
-                          ).then((_) {
-                            loadAllData();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-
-                  Row(
-                    children: [
-                      _card(
-                        "Pending",
-                        "₹ $pendingAmount",
-                        Icons.pending_actions,
-                        Colors.red,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const PendingBills(),
-                            ),
-                          ).then((_) {
-                            loadAllData();
-                          });
-                        },
-                      ),
-                      _card(
-                        "Customers",
-                        "$totalCustomers",
-                        Icons.people,
-                        Colors.purple,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const CustomerDetails(),
-                            ),
-                          ).then((_) {
-                            loadAllData();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  TextField(
-                    controller: searchController,
-                    onChanged: searchData,
-                    decoration: InputDecoration(
-                      hintText: "Search Invoice / Customer",
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  Row(
-                    children: [
+                      /// LEFT SIDE (4 CARDS)
                       Expanded(
-                        child: ElevatedButton(
-                          onPressed: loadWeekly,
-                          child: const Text("Weekly"),
+                        flex: 2,
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                _card(
+                                  "Total Sales",
+                                  "₹ $totalSales",
+                                  Icons.currency_rupee,
+                                  Colors.green,
+                                  () {},
+                                ),
+                                _card(
+                                  "Invoices",
+                                  "$totalInvoices",
+                                  Icons.receipt,
+                                  Colors.blue,
+                                  () {},
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                _card(
+                                  "Pending",
+                                  "₹ $pendingAmount",
+                                  Icons.pending_actions,
+                                  Colors.red,
+                                  () {},
+                                ),
+                                _card(
+                                  "Customers",
+                                  "$totalCustomers",
+                                  Icons.people,
+                                  Colors.purple,
+                                  () {},
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
+
+                      const SizedBox(width: 16),
+
+                      /// RIGHT SIDE (DONUT CHART)
                       Expanded(
-                        child: ElevatedButton(
-                          onPressed: loadMonthly,
-                          child: const Text("Monthly"),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: loadYearly,
-                          child: const Text("Yearly"),
+                        flex: 1,
+                        child: Container(
+                          height: 220,
+                          padding: const EdgeInsets.all(16),
+                          decoration: _box(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                "Product Distribution",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(height: 20),
+
+                              Expanded(
+                                child: Center(child: Text("Donut Chart Here")),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -360,58 +322,41 @@ ORDER BY invoiceDate DESC
 
                   const SizedBox(height: 20),
 
-                  _sectionTitle("All Invoices"),
+                  /// ================= MIDDLE SECTION =================
+                  Row(
+                    children: [
+                      _graphCard("Monthly Sales"),
+                      _graphCard("Pending vs Paid"),
+                    ],
+                  ),
+
+                  Row(
+                    children: [
+                      _graphCard("Top Products"),
+                      _graphCard("New vs Repeat Customers"),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// ================= BOTTOM SECTION =================
                   Container(
                     height: 300,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
                     decoration: _box(),
-                    child: ListView.builder(
-                      itemCount: invoiceList.length,
-                      itemBuilder: (context, index) {
-                        final inv = invoiceList[index];
-                        return ListTile(
-                          title: Text(inv['receiverName'] ?? ""),
-                          subtitle: Text(
-                            "Inv: ${inv['invoiceNo']}  |  ${inv['invoiceDate']}",
-                          ),
-                          trailing: Text("₹ ${inv['netTotal']}"),
-                        );
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  _sectionTitle("Top Customers"),
-                  Container(
-                    height: 180,
-                    decoration: _box(),
-                    child: ListView.builder(
-                      itemCount: topCustomers.length,
-                      itemBuilder: (c, i) {
-                        return ListTile(
-                          title: Text(topCustomers[i]['receiverName']),
-                          trailing: Text("₹ ${topCustomers[i]['totalSpent']}"),
-                        );
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  _sectionTitle("Pending Payments"),
-                  Container(
-                    height: 180,
-                    decoration: _box(),
-                    child: ListView.builder(
-                      itemCount: pendingList.length,
-                      itemBuilder: (c, i) {
-                        final p = pendingList[i];
-                        return ListTile(
-                          title: Text(p['receiverName']),
-                          subtitle: Text("Inv ${p['invoiceNo']}"),
-                          trailing: Text("₹ ${p['netTotal']}"),
-                        );
-                      },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          "Yearly Sales Trend",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 20),
+                        Expanded(
+                          child: Center(child: Text("Yearly Graph Here")),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -420,6 +365,7 @@ ORDER BY invoiceDate DESC
           ),
         ],
       ),
+
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
@@ -434,20 +380,20 @@ ORDER BY invoiceDate DESC
         ),
         child: Row(
           children: [
-          SizedBox(
-            width: 140,
-            height: 44,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const BillScreen()),
-                );
-              },
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('New Bill'),
+            SizedBox(
+              width: 140,
+              height: 44,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const BillScreen()),
+                  );
+                },
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('New Bill'),
+              ),
             ),
-          ),
 
             const SizedBox(width: 12),
 
@@ -466,6 +412,25 @@ ORDER BY invoiceDate DESC
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _graphCard(String title) {
+    return Expanded(
+      child: Container(
+        height: 220,
+        margin: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(16),
+        decoration: _box(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            const Expanded(child: Center(child: Text("Graph Here"))),
           ],
         ),
       ),
@@ -502,19 +467,6 @@ ORDER BY invoiceDate DESC
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String text) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ),
     );
