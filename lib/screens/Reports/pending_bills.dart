@@ -22,8 +22,6 @@ class _PendingBillsState extends State<PendingBills> {
     loadPending();
   }
 
-  
-
   void showPaymentPopup(Map<String, dynamic> bill) {
     TextEditingController amountController = TextEditingController();
     String errorText = "";
@@ -33,80 +31,152 @@ class _PendingBillsState extends State<PendingBills> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              title: const Text("Confirm Payment"),
-
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  /// Bill Amount
-                  Text(
-                    "Bill Amount: ₹ ${bill['netTotal']}",
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500),
+                child: Dialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
                   ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Top Icon
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.payment,
+                            color: Colors.green,
+                            size: 30,
+                          ),
+                        ),
 
-                  const SizedBox(height: 12),
+                        const SizedBox(height: 15),
 
-                  /// Input Field
-                  TextField(
-                    controller: amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: "Enter Received Amount",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                        // Title
+                        const Text(
+                          "Confirm Payment",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // Bill Amount
+                        Text(
+                          "Bill Amount: ₹ ${bill['netTotal']}",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black54,
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Input Field
+                        TextField(
+                          controller: amountController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.currency_rupee),
+                            hintText: "Enter Received Amount",
+                            filled: true,
+                            fillColor: Colors.grey.shade100,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Error Message
+                        if (errorText.isNotEmpty)
+                          Text(
+                            errorText,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                            ),
+                          ),
+
+                        const SizedBox(height: 25),
+
+                        // Buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text(
+                                "Cancel",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                double entered =
+                                    double.tryParse(amountController.text) ?? 0;
+
+                                double actual =
+                                    ((bill['netTotal'] as num?) ?? 0)
+                                        .toDouble();
+
+                                if (entered == actual) {
+                                  Navigator.pop(context);
+                                  await markAsPaid(bill['id']);
+                                } else {
+                                  setState(() {
+                                    errorText =
+                                        "Amount does not match bill amount!";
+                                  });
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              icon: const Icon(Icons.check,color: Colors.white,),
+                              label: const Text(
+                                "Confirm",
+                                style: TextStyle(fontSize: 15,color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-
-                  const SizedBox(height: 8),
-
-                  /// Error Message
-                  if (errorText.isNotEmpty)
-                    Text(
-                      errorText,
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                ],
+                ),
               ),
-
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
-                ),
-
-                ElevatedButton(
-                  onPressed: () async {
-                    double entered =
-                        double.tryParse(amountController.text) ?? 0;
-
-                    double actual = ((bill['netTotal'] as num?) ?? 0)
-                        .toDouble();
-
-                    if (entered == actual) {
-                      Navigator.pop(context);
-
-                      await markAsPaid(bill['id']);
-                    } else {
-                      setState(() {
-                        errorText = "Amount does not match bill amount!";
-                      });
-                    }
-                  },
-                  child: const Text("Confirm"),
-                ),
-              ],
             );
           },
         );
       },
     );
   }
-  
 
   /// LOAD ALL PENDING BILLS
   Future<void> loadPending() async {
