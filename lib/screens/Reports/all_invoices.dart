@@ -283,7 +283,7 @@ class _AllInvoicesState extends State<AllInvoices> {
                         );
 
                         if (result == true) loadInvoices();
-                      }),
+                      }, isEnabled: !isPaid),
 
                       actionBtn("Download PDF", Icons.picture_as_pdf, () async {
                         final db = await DatabaseHelper.instance.database;
@@ -373,22 +373,39 @@ class _AllInvoicesState extends State<AllInvoices> {
     );
   }
 
-  Widget actionBtn(String title, IconData icon, VoidCallback onTap) {
+  Widget actionBtn(
+    String title,
+    IconData icon,
+    VoidCallback onTap, {
+    bool isEnabled = true,
+  }) {
     return Column(
       children: [
         InkWell(
-          onTap: onTap,
+          onTap: isEnabled ? onTap : null,
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: isEnabled
+                  ? Colors.blue.withOpacity(0.1)
+                  : Colors.grey.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Colors.blue, size: 26),
+            child: Icon(
+              icon,
+              color: isEnabled ? Colors.blue : Colors.grey,
+              size: 26,
+            ),
           ),
         ),
         const SizedBox(height: 6),
-        Text(title, style: const TextStyle(fontSize: 13)),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 13,
+            color: isEnabled ? Colors.black : Colors.grey,
+          ),
+        ),
       ],
     );
   }
