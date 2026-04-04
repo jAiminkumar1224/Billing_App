@@ -28,8 +28,12 @@ class _CustomerDetailsState extends State<CustomerDetails> {
 SELECT 
   receiverName,
   MAX(receiverAddress) as receiverAddress,
+
   MAX(receiverState) as receiverState,
   MAX(receiverStateCode) as receiverStateCode,
+
+  MAX(state) as state,
+  MAX(stateCode) as stateCode,
   MAX(contactNumber) as contactNumber,
   MAX(receiverGstin) as receiverGstin,
   MAX(email) as email,
@@ -486,7 +490,7 @@ ORDER BY totalSpent DESC''');
                             () => showWhatsAppPopup(cust),
                           ),
                           _actionBtn(
-                            "Invoice",
+                            "New Invoice",
                             Icons.add,
                             () => createInvoice(cust),
                           ),

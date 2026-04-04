@@ -188,6 +188,9 @@ class _BillScreenState extends State<BillScreen> {
     if (widget.customerData != null) {
       final data = widget.customerData!;
 
+      stateController.text = data['state'] ?? '';
+      stateCodeController.text = data['stateCode'] ?? '';
+
       receiverNameController.text = data['receiverName'] ?? '';
       receiverAddressController.text = data['receiverAddress'] ?? '';
       receiverStateController.text = data['receiverState'] ?? '';

@@ -243,129 +243,88 @@ ORDER BY invoiceDate DESC
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  /// ================= TOP SECTION =================
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      /// LEFT SIDE (4 CARDS)
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                _card(
-                                  "Total Sales",
-                                  "₹ $totalSales",
-                                  Icons.currency_rupee,
-                                  Colors.green,
-                                  () {},
-                                ),
-                                _card(
-                                  "Invoices",
-                                  "$totalInvoices",
-                                  Icons.receipt,
-                                  Colors.blue,
-                                  () {},
-                                ),
-                              ],
+                      _card(
+                        "Total Sales",
+                        "₹ $totalSales",
+                        Icons.currency_rupee,
+                        Colors.green,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SalesReportScreen(),
                             ),
-                            Row(
-                              children: [
-                                _card(
-                                  "Pending",
-                                  "₹ $pendingAmount",
-                                  Icons.pending_actions,
-                                  Colors.red,
-                                  () {},
-                                ),
-                                _card(
-                                  "Customers",
-                                  "$totalCustomers",
-                                  Icons.people,
-                                  Colors.purple,
-                                  () {},
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                          ).then((_) {
+                            loadAllData();
+                          });
+                        },
                       ),
-
-                      const SizedBox(width: 16),
-
-                      /// RIGHT SIDE (DONUT CHART)
-                      Expanded(
-                        flex: 1,
-                        child: Container(
-                          height: 220,
-                          padding: const EdgeInsets.all(16),
-                          decoration: _box(),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                "Product Distribution",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              SizedBox(height: 20),
-
-                              Expanded(
-                                child: Center(child: Text("Donut Chart Here")),
-                              ),
-                            ],
-                          ),
-                        ),
+                      _card(
+                        "Invoices",
+                        "$totalInvoices",
+                        Icons.receipt,
+                        Colors.blue,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AllInvoices(),
+                            ),
+                          ).then((_) {
+                            loadAllData();
+                          });
+                        },
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 20),
-
-                  /// ================= MIDDLE SECTION =================
                   Row(
                     children: [
-                      _graphCard("Monthly Sales"),
-                      _graphCard("Pending vs Paid"),
+                      _card(
+                        "Pending",
+                        "₹ $pendingAmount",
+                        Icons.pending_actions,
+                        Colors.red,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PendingBills(),
+                            ),
+                          ).then((_) {
+                            loadAllData();
+                          });
+                        },
+                      ),
+                      _card(
+                        "Customers",
+                        "$totalCustomers",
+                        Icons.people,
+                        Colors.purple,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CustomerDetails(),
+                            ),
+                          ).then((_) {
+                            loadAllData();
+                          });
+                        },
+                      ),
                     ],
                   ),
 
-                  Row(
-                    children: [
-                      _graphCard("Top Products"),
-                      _graphCard("New vs Repeat Customers"),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// ================= BOTTOM SECTION =================
-                  Container(
-                    height: 300,
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: _box(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          "Yearly Sales Trend",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 20),
-                        Expanded(
-                          child: Center(child: Text("Yearly Graph Here")),
-                        ),
-                      ],
-                    ),
-                  ),
+                 
+                 
                 ],
               ),
             ),
           ),
         ],
       ),
-
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
@@ -418,25 +377,6 @@ ORDER BY invoiceDate DESC
     );
   }
 
-  Widget _graphCard(String title) {
-    return Expanded(
-      child: Container(
-        height: 220,
-        margin: const EdgeInsets.all(6),
-        padding: const EdgeInsets.all(16),
-        decoration: _box(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            const Expanded(child: Center(child: Text("Graph Here"))),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _card(
     String title,
     String value,
@@ -471,6 +411,7 @@ ORDER BY invoiceDate DESC
       ),
     );
   }
+
 
   BoxDecoration _box() {
     return BoxDecoration(
