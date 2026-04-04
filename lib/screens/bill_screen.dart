@@ -1253,10 +1253,7 @@ class _BillScreenState extends State<BillScreen> {
 
   Widget buildItemHeader() {
     return Padding(
-      padding: const EdgeInsets.only(
-        bottom: 6,
-        right: 340, //    SAME SPACE AS ITEM LIST (FOR SUMMARY BOX)
-      ),
+      padding: const EdgeInsets.only(bottom: 2, right: 340),
       child: Row(
         children: const [
           SizedBox(
@@ -1469,14 +1466,14 @@ class _BillScreenState extends State<BillScreen> {
     return Align(
       alignment: Alignment.bottomRight,
       child: Padding(
-        padding: const EdgeInsets.only(right: 15, bottom: 15),
+        padding: const EdgeInsets.only(right: 15, bottom: 10),
         child: Material(
           elevation: 6,
           borderRadius: BorderRadius.circular(10),
           color: Colors.white,
           child: Container(
             width: 320,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.grey.shade300),
@@ -1490,8 +1487,6 @@ class _BillScreenState extends State<BillScreen> {
                   "Invoice Summary",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-
-                const SizedBox(height: 10),
 
                 ValueListenableBuilder(
                   valueListenable: invoiceNoController,
@@ -1536,12 +1531,12 @@ class _BillScreenState extends State<BillScreen> {
                 ),
                 summaryText("Total Items", items.length.toString()),
 
-                const Divider(height: 20),
+                const Divider(height: 10),
 
                 // ================= AMOUNT =================
                 summaryRow('Sub Total', subTotal),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
 
                 Row(
                   children: [
@@ -1560,7 +1555,7 @@ class _BillScreenState extends State<BillScreen> {
                         decoration: const InputDecoration(
                           isDense: true,
                           contentPadding: EdgeInsets.symmetric(
-                            vertical: 6,
+                            vertical: 4,
                             horizontal: 8,
                           ),
                         ),
@@ -1591,11 +1586,11 @@ class _BillScreenState extends State<BillScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
 
                 summaryRow('Discount Amount', discountAmount),
 
-                const Divider(height: 20),
+                const Divider(height: 10),
 
                 summaryRow('Net Total', netTotal, isBold: true),
               ],
@@ -1620,6 +1615,9 @@ class _BillScreenState extends State<BillScreen> {
             flex: 3,
             child: Text(
               value.isEmpty ? "-" : value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
