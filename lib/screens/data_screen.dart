@@ -1,3 +1,4 @@
+import 'package:billing_app/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:billing_app/database/database_helper.dart';
 import 'bill_screen.dart';
@@ -316,9 +317,6 @@ ORDER BY invoiceDate DESC
                       ),
                     ],
                   ),
-
-                 
-                 
                 ],
               ),
             ),
@@ -361,7 +359,11 @@ ORDER BY invoiceDate DESC
               height: 44,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
                 },
                 icon: const Icon(Icons.logout, size: 18),
                 label: const Text('Logout'),
@@ -411,7 +413,6 @@ ORDER BY invoiceDate DESC
       ),
     );
   }
-
 
   BoxDecoration _box() {
     return BoxDecoration(

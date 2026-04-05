@@ -287,7 +287,6 @@ class _AllInvoicesState extends State<AllInvoices> {
 
                       actionBtn("Download PDF", Icons.picture_as_pdf, () async {
                         final db = await DatabaseHelper.instance.database;
-
                         final itemsData = await db.query(
                           'invoice_items',
                           where: 'invoiceId = ?',

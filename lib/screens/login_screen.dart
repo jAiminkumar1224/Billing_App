@@ -234,9 +234,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -374,8 +374,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 gradient: LinearGradient(
                                   colors: isEnabled
                                       ? [
-                                          const Color(0xFFFF7A18),
-                                          const Color(0xFFFFA726),
+                                          const Color(0xFF4A90E2),
+                                          const Color(0xFF2F6DB3),
                                         ]
                                       : [
                                           Colors.grey.shade400,

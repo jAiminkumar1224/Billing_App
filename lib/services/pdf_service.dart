@@ -368,10 +368,10 @@ class PdfService {
               ),
               columnWidths: {
                 0: pw.FlexColumnWidth(0.6),
-                1: pw.FlexColumnWidth(5.7),
-                2: pw.FlexColumnWidth(0.8),
+                1: pw.FlexColumnWidth(5.5),
+                2: pw.FlexColumnWidth(1.0),
                 3: pw.FlexColumnWidth(0.8),
-                4: pw.FlexColumnWidth(0.8),
+                4: pw.FlexColumnWidth(1.4),
                 5: pw.FlexColumnWidth(1.5),
               },
               children: [
@@ -479,18 +479,19 @@ class PdfService {
       ),
     );
 
-    /// 👇 PDF bytes
     final bytes = await pdf.save();
+    final safeName = sanitizeFileName(receiverName);
 
-    /// 👇 File picker (SAVE AS dialog)
     String? outputFile = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Invoice PDF',
-      fileName: 'Invoice_$invoiceNo.pdf',
+
+      fileName: 'Invoice_${invoiceNo}_$safeName.pdf',
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
+    
 
-    if (outputFile == null) return; // user cancel
+    if (outputFile == null) return; 
 
     final file = File(outputFile);
     await file.writeAsBytes(bytes);
@@ -687,9 +688,7 @@ pw.Widget bankAndSignatureSection() {
 
       /// FOOTER
       pw.Padding(
-        padding: pw.EdgeInsets.only(
-          bottom: PdfPageFormat.cm * 2,
-        ), // 👈 1 CM SPACE
+        padding: pw.EdgeInsets.only(bottom: PdfPageFormat.cm * 2),
         child: pw.Container(
           decoration: pw.BoxDecoration(
             border: pw.Border(
@@ -804,6 +803,13 @@ pw.Widget totalRow(String l, double v, {bool bold = false}) => pw.Row(
     ),
   ],
 );
+
+String sanitizeFileName(String name) {
+  return name
+      .replaceAll(RegExp(r'[\\/:*?"<>|]'), '')
+      .replaceAll(' ', '_')
+      .trim();
+}
 
 String formatDate(DateTime d) =>
     '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
