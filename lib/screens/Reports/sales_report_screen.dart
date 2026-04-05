@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
-
+import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:billing_app/services/sales_report_pdf.dart';
 
 class SalesReportScreen extends StatefulWidget {
@@ -209,261 +209,199 @@ ORDER BY id DESC
     await showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          contentPadding: const EdgeInsets.all(12),
-
-          content: StatefulBuilder(
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: StatefulBuilder(
             builder: (context, setStateDialog) {
-              return SizedBox(
-                width: 400,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      /// HEADER
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Select Range",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+              return Container(
+                width: 420,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// HEADER
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Select Date Range",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
-
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      /// SELECTED RANGE TEXT
-                      Row(
-                        children: [
-                          /// START DATE
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.blue),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "Start Date",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    tempStart == null
-                                        ? "--/--/----"
-                                        : showDate(tempStart!),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(width: 10),
-
-                          /// END DATE
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.blue),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "End Date",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    tempEnd == null
-                                        ? "--/--/----"
-                                        : showDate(tempEnd!),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 15),
-
-                      /// CALENDAR
-                      Theme(
-                        data: Theme.of(context).copyWith(
-                          colorScheme: const ColorScheme.light(
-                            primary: Color.fromARGB(
-                              255,
-                              118,
-                              181,
-                              237,
-                            ), // selected circle color
-                            onPrimary: Colors.white, // selected text color
-                            onSurface: Colors.black,
-                          ),
-                          textButtonTheme: TextButtonThemeData(
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.blue,
-                            ),
-                          ),
-                          splashColor: Colors.blue.withValues(alpha: 0.2),
-                          highlightColor: Colors.blue.withValues(alpha: 0.1),
-
-                          primaryColor: Colors.blue,
                         ),
-                        child: SizedBox(
-                          height: 300,
-                          child: CalendarDatePicker(
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2100),
-                            onDateChanged: (date) {
-                              setStateDialog(() {
-                                if (tempStart == null) {
-                                  tempStart = date;
-                                } else if (tempEnd == null) {
-                                  tempEnd = date;
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
 
-                                  if (tempEnd!.isBefore(tempStart!)) {
-                                    final t = tempStart;
-                                    tempStart = tempEnd;
-                                    tempEnd = t;
-                                  }
-                                } else {
-                                  tempStart = date;
-                                  tempEnd = null;
-                                }
+                    const SizedBox(height: 10),
+
+                    /// START & END BOXES
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _dateBox(
+                            title: "Start",
+                            date: tempStart,
+                            isActive: tempStart != null && tempEnd == null,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _dateBox(
+                            title: "End",
+                            date: tempEnd,
+                            isActive: tempEnd != null,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    /// RANGE CHIPS (🔥 UX BOOST)
+                    if (tempStart != null || tempEnd != null)
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          if (tempStart != null)
+                            Chip(
+                              label: Text("Start: ${showDate(tempStart!)}"),
+                              backgroundColor: Colors.blue.shade50,
+                            ),
+                          if (tempEnd != null)
+                            Chip(
+                              label: Text("End: ${showDate(tempEnd!)}"),
+                              backgroundColor: Colors.blue.shade50,
+                            ),
+                        ],
+                      ),
+
+                    const SizedBox(height: 12),
+
+                    /// DATE PICKER
+                    SizedBox(
+                      height: 320,
+                      child: SfDateRangePicker(
+                        view: DateRangePickerView.year,
+                        selectionMode: DateRangePickerSelectionMode.range,
+                        showNavigationArrow: true,
+
+                        headerStyle: const DateRangePickerHeaderStyle(
+                          textAlign: TextAlign.center,
+                          textStyle: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        selectionShape: DateRangePickerSelectionShape.rectangle,
+
+                        selectionColor: Colors.blue,
+                        startRangeSelectionColor: Colors.blue,
+                        endRangeSelectionColor: Colors.blue,
+                        rangeSelectionColor: Colors.blue.withOpacity(0.15),
+
+                        monthCellStyle: DateRangePickerMonthCellStyle(
+                          textStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+
+                        yearCellStyle: DateRangePickerYearCellStyle(
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+
+                          todayTextStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+
+                        onSelectionChanged:
+                            (DateRangePickerSelectionChangedArgs args) {
+                              if (args.value is PickerDateRange) {
+                                final range = args.value;
+
+                                setStateDialog(() {
+                                  tempStart = range.startDate;
+                                  tempEnd = range.endDate;
+                                });
+                              }
+                            },
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    /// BUTTONS
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setStateDialog(() {
+                                tempStart = null;
+                                tempEnd = null;
                               });
                             },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: const Text("Reset"),
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: (tempStart != null && tempEnd != null)
+                                ? () async {
+                                    startDate = tempStart;
+                                    endDate = tempEnd;
 
-                      const SizedBox(height: 10),
+                                    final db =
+                                        await DatabaseHelper.instance.database;
 
-                      /// SAVE BUTTON
-                      Row(
-                        children: [
-                          /// RESET BUTTON
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () {
-                                setStateDialog(() {
-                                  tempStart = null;
-                                  tempEnd = null;
-                                });
-                              },
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                side: const BorderSide(color: Colors.blue),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                "Reset",
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(width: 10),
-
-                          /// SAVE BUTTON
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: (tempStart != null && tempEnd != null)
-                                  ? () async {
-                                      startDate = tempStart;
-                                      endDate = tempEnd;
-
-                                      final db = await DatabaseHelper
-                                          .instance
-                                          .database;
-
-                                      final data = await db.rawQuery(
-                                        """
+                                    final data = await db.rawQuery(
+                                      """
 SELECT * FROM invoices
 WHERE paymentStatus='Payment Received'
 AND date(invoiceDate) BETWEEN date(?) AND date(?)
 ORDER BY id DESC
 """,
-                                        [
-                                          startDate!.toIso8601String(),
-                                          endDate!.toIso8601String(),
-                                        ],
-                                      );
+                                      [
+                                        startDate!.toIso8601String(),
+                                        endDate!.toIso8601String(),
+                                      ],
+                                    );
 
-                                      setState(() {
-                                        filterTitle =
-                                            "Sales for Selected Period";
-                                        isFilterActive = true;
-                                      });
+                                    setState(() {
+                                      filterTitle = "Sales for Selected Period";
+                                      isFilterActive = true;
+                                    });
 
-                                      updateList(data);
-                                      Navigator.pop(context);
-                                    }
-                                  : null,
-                              child: const Text(
-                                "Save",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
+                                    updateList(data);
+                                    Navigator.pop(context);
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
+                            child: const Text("Apply"),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               );
             },
@@ -519,20 +457,20 @@ ORDER BY id DESC
       toDate: toDate,
     );
 
-/// USER SELECT LOCATION
-String fileName;
+    /// USER SELECT LOCATION
+    String fileName;
 
-if (startDate != null && endDate != null) {
-  fileName =
-      "Sales_Report_${formatFileDate(startDate!)}_to_${formatFileDate(endDate!)}.pdf";
-} else {
-  fileName = "Sales_Report.pdf";
-}
+    if (startDate != null && endDate != null) {
+      fileName =
+          "Sales_Report_${formatFileDate(startDate!)}_to_${formatFileDate(endDate!)}.pdf";
+    } else {
+      fileName = "Sales_Report.pdf";
+    }
 
-String? outputPath = await FilePicker.platform.saveFile(
-  dialogTitle: 'Save PDF',
-  fileName: fileName,
-);
+    String? outputPath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save PDF',
+      fileName: fileName,
+    );
 
     if (outputPath != null) {
       final newFile = File(outputPath);
@@ -544,41 +482,41 @@ String? outputPath = await FilePicker.platform.saveFile(
     }
   }
 
-void exportSalesExcel() async {
-  String csv = "Date,Invoice,Customer,Amount\n";
+  void exportSalesExcel() async {
+    String csv = "Date,Invoice,Customer,Amount\n";
 
-  for (var sale in salesList) {
-    csv +=
-        "${formatDate(sale['invoiceDate'])},"
-        "${sale['invoiceNo']},"
-        "${sale['receiverName']},"
-        "${sale['netTotal']}\n";
+    for (var sale in salesList) {
+      csv +=
+          "${formatDate(sale['invoiceDate'])},"
+          "${sale['invoiceNo']},"
+          "${sale['receiverName']},"
+          "${sale['netTotal']}\n";
+    }
+
+    /// USER SELECT LOCATION
+    String fileName;
+
+    if (startDate != null && endDate != null) {
+      fileName =
+          "Sales_Report_${formatFileDate(startDate!)}_to_${formatFileDate(endDate!)}.csv";
+    } else {
+      fileName = "Sales_Report.csv";
+    }
+
+    String? outputPath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save Excel',
+      fileName: fileName,
+    );
+
+    if (outputPath != null) {
+      final file = File(outputPath);
+      await file.writeAsString(csv);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Excel saved at: $outputPath")));
+    }
   }
-
-  /// USER SELECT LOCATION
-  String fileName;
-
-  if (startDate != null && endDate != null) {
-    fileName =
-        "Sales_Report_${formatFileDate(startDate!)}_to_${formatFileDate(endDate!)}.csv";
-  } else {
-    fileName = "Sales_Report.csv";
-  }
-
-  String? outputPath = await FilePicker.platform.saveFile(
-    dialogTitle: 'Save Excel',
-    fileName: fileName,
-  );
-
-  if (outputPath != null) {
-    final file = File(outputPath);
-    await file.writeAsString(csv);
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("Excel saved at: $outputPath")));
-  }
-}
 
   DateTime parseDate(dynamic date) {
     if (date is int) {
@@ -586,6 +524,45 @@ void exportSalesExcel() async {
     } else {
       return DateTime.parse(date.toString());
     }
+  }
+
+  Widget _dateBox({
+    required String title,
+    DateTime? date,
+    bool isActive = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.blue.shade50 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isActive ? Colors.blue : Colors.grey.shade300,
+          width: isActive ? 1.5 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: isActive ? Colors.blue : Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            date == null
+                ? "--/--/----"
+                : "${date.day.toString().padLeft(2, '0')}/"
+                      "${date.month.toString().padLeft(2, '0')}/"
+                      "${date.year}",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
