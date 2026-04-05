@@ -16,6 +16,8 @@ class _AllInvoicesState extends State<AllInvoices> {
   List<Map<String, dynamic>> invoiceList = [];
   List<Map<String, dynamic>> filteredList = [];
 
+  OverlayEntry? overlayEntry;
+
   String searchText = "";
   String statusFilter = "All";
 
@@ -57,6 +59,53 @@ class _AllInvoicesState extends State<AllInvoices> {
       invoiceList = data;
       filteredList = data;
     });
+  }
+
+  void showBottomIndicator(String text) {
+    overlayEntry?.remove();
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: 20,
+        right: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6)],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation(Color(0xFF4A90E2)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  text,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(overlayEntry!);
+  }
+
+  void hideBottomIndicator() {
+    overlayEntry?.remove();
+    overlayEntry = null;
   }
 
   /// SEARCH + FILTER
@@ -286,7 +335,10 @@ class _AllInvoicesState extends State<AllInvoices> {
                       }, isEnabled: !isPaid),
 
                       actionBtn("Download PDF", Icons.picture_as_pdf, () async {
+                        showBottomIndicator("Generating PDF...");
+
                         final db = await DatabaseHelper.instance.database;
+
                         final itemsData = await db.query(
                           'invoice_items',
                           where: 'invoiceId = ?',
@@ -311,10 +363,16 @@ class _AllInvoicesState extends State<AllInvoices> {
                           netTotal: inv['netTotal'],
                           discountPercentText: "0",
                         );
-                      }),
 
-                      actionBtn("Print Bill", Icons.print, () {
-                        printInvoiceFromDb(inv);
+                        hideBottomIndicator();
+                      }),
+                      
+                      actionBtn("Print Bill", Icons.print, () async {
+                        showBottomIndicator("Preparing Print...");
+
+                        await printInvoiceFromDb(inv);
+
+                        hideBottomIndicator();
                       }),
                     ],
                   ),

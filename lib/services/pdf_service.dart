@@ -480,24 +480,31 @@ class PdfService {
     );
 
     final bytes = await pdf.save();
-    final safeName = sanitizeFileName(receiverName);
+    String fileName = 'Invoice_${invoiceNo}_${sanitizeFileName(receiverName)}';
+
+    if (!fileName.toLowerCase().endsWith('.pdf')) {
+      fileName = '$fileName.pdf';
+    }
 
     String? outputFile = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Invoice PDF',
-
-      fileName: 'Invoice_${invoiceNo}_$safeName.pdf',
+      fileName: fileName,
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
-    
 
-    if (outputFile == null) return; 
+    if (outputFile == null) return;
 
-    final file = File(outputFile);
+    String finalPath = outputFile;
+
+    if (!finalPath.toLowerCase().endsWith('.pdf')) {
+      finalPath = '$finalPath.pdf';
+    }
+
+    final file = File(finalPath);
     await file.writeAsBytes(bytes);
 
-    /// optional → open file after save
-    await OpenFilex.open(outputFile);
+    await OpenFilex.open(finalPath);
   }
 }
 
