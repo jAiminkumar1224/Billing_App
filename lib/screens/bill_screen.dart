@@ -378,7 +378,7 @@ class _BillScreenState extends State<BillScreen> {
     }
 
     //    GSTIN
-    String gstin = receiverGstinController.text.trim().toUpperCase();
+    receiverGstinController.text.trim().toUpperCase();
 
     //    Receiver State
     if (receiverStateController.text.trim().isEmpty) {
