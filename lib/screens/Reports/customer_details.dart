@@ -268,6 +268,14 @@ ORDER BY totalSpent DESC''');
       builder: (_) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            TextEditingController emailController = TextEditingController(
+              text: cust['email'] ?? '',
+            );
+
+            bool isEmailSaved = (cust['email'] ?? "")
+                .toString()
+                .trim()
+                .isNotEmpty;
             return Container(
               height: MediaQuery.of(context).size.height * 0.9,
               decoration: const BoxDecoration(
@@ -378,70 +386,146 @@ ORDER BY totalSpent DESC''');
                                 ),
                                 const SizedBox(height: 15),
 
-                                const Text(
-                                  "Email",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-
-                                GestureDetector(
-                                  onTap: () async {
-                                    await Clipboard.setData(
-                                      ClipboardData(text: cust['email'] ?? ""),
-                                    );
-
-                                    setModalState(() => isCopied = true);
-
-                                    Future.delayed(Duration(seconds: 1), () {
-                                      if (mounted) {
-                                        setModalState(() => isCopied = false);
-                                      }
-                                    });
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: Duration(milliseconds: 300),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 8,
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      "Email",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: isCopied
-                                          ? Colors.green.withOpacity(
-                                              0.15,
-                                            ) //      highlight color
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            cust['email'] ?? "-",
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              color: Colors.black,
+
+                                    const SizedBox(height: 6),
+
+                                    isEmailSaved
+                                        ? GestureDetector(
+                                            onTap: () async {
+                                              await Clipboard.setData(
+                                                ClipboardData(
+                                                  text: cust['email'],
+                                                ),
+                                              );
+
+                                              setModalState(
+                                                () => isCopied = true,
+                                              );
+
+                                              Future.delayed(
+                                                const Duration(seconds: 1),
+                                                () {
+                                                  if (mounted) {
+                                                    setModalState(
+                                                      () => isCopied = false,
+                                                    );
+                                                  }
+                                                },
+                                              );
+                                            },
+                                            child: AnimatedContainer(
+                                              duration: const Duration(
+                                                milliseconds: 300,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 8,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: isCopied
+                                                    ? const Color.fromARGB(255, 120, 189, 228).withOpacity(
+                                                        0.15,
+                                                      )
+                                                    : Colors.transparent,
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      cust['email'],
+                                                      style: const TextStyle(
+                                                        fontSize: 15,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Icon(
+                                                    isCopied
+                                                        ? Icons.check
+                                                        : Icons.copy,
+                                                    size: 18,
+                                                    color: isCopied
+                                                        ? const Color.fromARGB(
+                                                            255,
+                                                            95,
+                                                            158,
+                                                            242,
+                                                          )
+                                                        : Colors.grey,
+                                                  ),
+                                                ],
+                                              ),
                                             ),
+                                          )
+                                        : Row(
+                                            children: [
+                                              Expanded(
+                                                child: TextField(
+                                                  controller: emailController,
+                                                  keyboardType: TextInputType
+                                                      .emailAddress,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                        hintText: "Enter Email",
+                                                        border:
+                                                            OutlineInputBorder(),
+                                                        isDense: true,
+                                                      ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              ElevatedButton(
+                                                onPressed: () async {
+                                                  String email = emailController
+                                                      .text
+                                                      .trim();
+
+                                                  if (email.isEmpty) return;
+
+                                                  final db =
+                                                      await DatabaseHelper
+                                                          .instance
+                                                          .database;
+
+                                                  await db.rawUpdate(
+                                                    '''
+                    UPDATE invoices 
+                    SET email = ? 
+                    WHERE receiverName = ?
+                    ''',
+                                                    [
+                                                      email,
+                                                      cust['receiverName'],
+                                                    ],
+                                                  );
+
+                                                  final updatedCust =
+                                                      Map<String, dynamic>.from(
+                                                        cust,
+                                                      );
+                                                  updatedCust['email'] = email;
+
+                                                  setModalState(() {
+                                                    cust = updatedCust;
+                                                  });
+                                                },
+                                                child: const Text("Save Email"),
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                        Icon(
-                                          isCopied
-                                              ? Icons.check
-                                              : Icons.copy, //      icon change
-                                          size: 18,
-                                          color: isCopied
-                                              ? const Color.fromARGB(
-                                                  255,
-                                                  39,
-                                                  120,
-                                                  201,
-                                                )
-                                              : Colors.grey,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                  ],
                                 ),
                               ],
                             ),

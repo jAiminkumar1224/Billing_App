@@ -199,7 +199,6 @@ class _BillScreenState extends State<BillScreen> {
       receiverGstinController.text = data['receiverGstin'] ?? '';
       emailController.text = data['email'] ?? '';
       whatsappNumberController.text = data['whatsappNumber'] ?? '';
-      poNumberController.text = data['poNumber'] ?? '';
     }
 
     _itemScrollController = ScrollController();
@@ -381,19 +380,6 @@ class _BillScreenState extends State<BillScreen> {
     //    GSTIN
     String gstin = receiverGstinController.text.trim().toUpperCase();
 
-    if (gstin.isEmpty) {
-      showError("GSTIN is required");
-      return;
-    }
-
-    // GSTIN FORMAT VALIDATION
-    if (!RegExp(
-      r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$',
-    ).hasMatch(gstin)) {
-      showError("Enter valid GSTIN");
-      return;
-    }
-
     //    Receiver State
     if (receiverStateController.text.trim().isEmpty) {
       showError("Receiver State is required");
@@ -412,21 +398,9 @@ class _BillScreenState extends State<BillScreen> {
       return;
     }
 
-    // Indian Mobile Validation (10 digit, starts with 6-9)
+    // Mobile Validation
     if (!RegExp(r'^[6-9]\d{9}$').hasMatch(contact)) {
       showError("Enter valid Contact Number");
-      return;
-    }
-
-    //    Email
-    if (emailController.text.trim().isEmpty) {
-      showError("Email is required");
-      return;
-    }
-
-    //    Email Format
-    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(emailController.text)) {
-      showError("Enter valid Email");
       return;
     }
 
@@ -448,11 +422,9 @@ class _BillScreenState extends State<BillScreen> {
         stateCodeController.text.trim().isEmpty ||
         receiverNameController.text.trim().isEmpty ||
         receiverAddressController.text.trim().isEmpty ||
-        receiverGstinController.text.trim().isEmpty ||
         receiverStateController.text.trim().isEmpty ||
         receiverStateCodeController.text.trim().isEmpty ||
         contactNumberController.text.trim().isEmpty ||
-        emailController.text.trim().isEmpty ||
         poNumberController.text.trim().isEmpty ||
         poDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -495,25 +467,7 @@ class _BillScreenState extends State<BillScreen> {
       return;
     }
 
-    if (contactNumberController.text.isEmpty || emailController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Contact Number and Email are required"),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
 
-    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(emailController.text)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Enter valid Email"),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
 
     final db = await DatabaseHelper.instance.database;
 
@@ -859,7 +813,7 @@ class _BillScreenState extends State<BillScreen> {
 
     await showDialog(
       context: context,
-      barrierDismissible: true, 
+      barrierDismissible: true,
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
@@ -873,7 +827,6 @@ class _BillScreenState extends State<BillScreen> {
               const SizedBox(width: 8),
               const Expanded(child: Text("Exit Bill")),
 
-          
               InkWell(
                 onTap: () {
                   Navigator.pop(context);
@@ -891,8 +844,8 @@ class _BillScreenState extends State<BillScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); 
-                exit = true; 
+                Navigator.pop(context);
+                exit = true;
               },
               child: const Text("Discard", style: TextStyle(color: Colors.red)),
             ),
@@ -1131,17 +1084,7 @@ class _BillScreenState extends State<BillScreen> {
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         isDense: true,
-                        label: Text.rich(
-                          TextSpan(
-                            text: 'GSTIN/UIN',
-                            children: [
-                              TextSpan(
-                                text: '*',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ],
-                          ),
-                        ),
+                        label: Text.rich(TextSpan(text: 'GSTIN/UIN')),
                       ),
                     ),
                   ),
@@ -1181,7 +1124,7 @@ class _BillScreenState extends State<BillScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(child: rowInput('Email *', emailController)),
+            Expanded(child: rowInput('Email', emailController)),
             const SizedBox(width: 12),
             Expanded(
               child: rowInput(
