@@ -117,39 +117,41 @@ class _DataScreenState extends State<DataScreen> {
     final db = await DatabaseHelper.instance.database;
 
     final data = await db.query('invoices', orderBy: 'invoiceDate DESC');
-
-    var total = await db.rawQuery(
+ 
+    var totalResult = await db.rawQuery(
       "SELECT SUM(netTotal) as total FROM invoices WHERE paymentStatus = 'Payment Received'",
     );
 
-    totalSales = total.first['total'] == null
+    totalSales = totalResult.first['total'] == null
         ? 0
-        : (total.first['total'] as num).toDouble();
+        : (totalResult.first['total'] as num).toDouble();
 
     totalInvoices = data.length;
-
-    var pending = await db.rawQuery(
-      "SELECT SUM(netTotal) as total FROM invoices WHERE paymentStatus='Pending'",
+   
+    var pendingResult = await db.rawQuery(
+      "SELECT SUM(COALESCE(dueAmount, netTotal)) as total FROM invoices WHERE paymentStatus != 'Payment Received'",
     );
 
-    pendingAmount = pending.first['total'] == null
+    pendingAmount = pendingResult.first['total'] == null
         ? 0
-        : (pending.first['total'] as num).toDouble();
+        : (pendingResult.first['total'] as num).toDouble();
 
     pendingList = await db.query(
       'invoices',
-      where: "paymentStatus='Pending'",
+      where: "paymentStatus != ?",
+      whereArgs: ["Payment Received"],
       orderBy: 'invoiceDate DESC',
     );
 
     topCustomers = await db.rawQuery('''
-SELECT receiverName, SUM(netTotal) as totalSpent
-FROM invoices
-GROUP BY receiverName
-ORDER BY totalSpent DESC
-LIMIT 5
-''');
+    SELECT receiverName, SUM(netTotal) as totalSpent
+    FROM invoices
+    GROUP BY receiverName
+    ORDER BY totalSpent DESC
+    LIMIT 5
+  ''');
 
+    ///     TOTAL CUSTOMERS
     var cust = await db.rawQuery(
       "SELECT COUNT(DISTINCT receiverName) as total FROM invoices",
     );

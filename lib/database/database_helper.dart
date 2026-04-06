@@ -20,9 +20,31 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 4,
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
     );
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 3) {
+      await db.execute(
+          "ALTER TABLE invoices ADD COLUMN paidAmount REAL DEFAULT 0");
+      await db.execute(
+          "ALTER TABLE invoices ADD COLUMN dueAmount REAL DEFAULT 0");
+    }
+
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE payments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          invoiceId INTEGER,
+          amount REAL,
+          createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (invoiceId) REFERENCES invoices(id) ON DELETE CASCADE
+        )
+      ''');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -51,6 +73,9 @@ CREATE TABLE invoices (
   discount REAL,
   netTotal REAL,
 
+  paidAmount REAL DEFAULT 0,
+  dueAmount REAL DEFAULT 0,
+
   paymentStatus TEXT,
   createdAt TEXT DEFAULT CURRENT_TIMESTAMP
 )
@@ -65,6 +90,16 @@ CREATE TABLE invoice_items (
   qty INTEGER,
   rate REAL,
   amount REAL,
+  FOREIGN KEY (invoiceId) REFERENCES invoices(id) ON DELETE CASCADE
+)
+''');
+
+    await db.execute('''
+CREATE TABLE payments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  invoiceId INTEGER,
+  amount REAL,
+  createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (invoiceId) REFERENCES invoices(id) ON DELETE CASCADE
 )
 ''');
