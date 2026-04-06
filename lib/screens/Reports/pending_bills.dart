@@ -24,6 +24,8 @@ class _PendingBillsState extends State<PendingBills> {
 
   void showPaymentPopup(Map<String, dynamic> bill) {
     TextEditingController amountController = TextEditingController();
+
+    bool isFullPayment = true; // toggle state
     String errorText = "";
 
     showDialog(
@@ -31,6 +33,11 @@ class _PendingBillsState extends State<PendingBills> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            double total = ((bill['netTotal'] as num?) ?? 0).toDouble();
+            double entered = double.tryParse(amountController.text) ?? 0;
+
+            double dueAmount = total - entered;
+
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 500),
@@ -43,26 +50,114 @@ class _PendingBillsState extends State<PendingBills> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Top Icon
+                        ///   TOGGLE BUTTON
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: Container(
+                            width: 140,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Stack(
+                              children: [
+                                ///    SLIDER
+                                AnimatedAlign(
+                                  duration: const Duration(milliseconds: 250),
+                                  alignment: isFullPayment
+                                      ? Alignment.centerLeft
+                                      : Alignment.centerRight,
+                                  child: Container(
+                                    width: 70,
+                                    margin: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: isFullPayment
+                                          ? Colors.green
+                                          : Colors.orange,
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                  ),
+                                ),
+
+                                ///    BUTTONS
+                                Row(
+                                  children: [
+                                    /// FULL PAYMENT
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            isFullPayment = true;
+                                            amountController.clear();
+                                            errorText = "";
+                                          });
+                                        },
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.check,
+                                            size: 18,
+                                            color: isFullPayment
+                                                ? Colors.white
+                                                : Colors.green,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    /// PARTIAL PAYMENT
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            isFullPayment = false;
+                                            amountController.clear();
+                                            errorText = "";
+                                          });
+                                        },
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.percent,
+                                            size: 18,
+                                            color: !isFullPayment
+                                                ? Colors.white
+                                                : Colors.orange,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        ///   ICON
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
+                            color: isFullPayment
+                                ? Colors.green.withOpacity(0.1)
+                                : Colors.orange.withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
-                            Icons.payment,
-                            color: Colors.green,
+                          child: Icon(
+                            isFullPayment
+                                ? Icons.payment
+                                : Icons.account_balance_wallet,
+                            color: isFullPayment ? Colors.green : Colors.orange,
                             size: 30,
                           ),
                         ),
 
                         const SizedBox(height: 15),
 
-                        // Title
-                        const Text(
-                          "Confirm Payment",
-                          style: TextStyle(
+                        ///   TITLE
+                        Text(
+                          isFullPayment ? "Confirm Payment" : "Partial Payment",
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -70,9 +165,9 @@ class _PendingBillsState extends State<PendingBills> {
 
                         const SizedBox(height: 10),
 
-                        // Bill Amount
+                        ///   BILL AMOUNT
                         Text(
-                          "Bill Amount: ₹ ${bill['netTotal']}",
+                          "Bill Amount: ₹ $total",
                           style: const TextStyle(
                             fontSize: 16,
                             color: Colors.black54,
@@ -81,18 +176,18 @@ class _PendingBillsState extends State<PendingBills> {
 
                         const SizedBox(height: 20),
 
-                        // Input Field
+                        ///   INPUT
                         TextField(
                           controller: amountController,
                           keyboardType: TextInputType.number,
+                          onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.currency_rupee),
-                            hintText: "Enter Received Amount",
+                            hintText: isFullPayment
+                                ? "Enter Full Amount"
+                                : "Enter Paid Amount",
                             filled: true,
                             fillColor: Colors.grey.shade100,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -100,9 +195,20 @@ class _PendingBillsState extends State<PendingBills> {
                           ),
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
 
-                        // Error Message
+                        ///   PARTIAL INFO
+                        if (!isFullPayment)
+                          Column(
+                            children: [
+                              Text(
+                                "Due Amount: ₹ ${dueAmount.toStringAsFixed(2)}",
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
+
+                        ///   ERROR
                         if (errorText.isNotEmpty)
                           Text(
                             errorText,
@@ -114,7 +220,7 @@ class _PendingBillsState extends State<PendingBills> {
 
                         const SizedBox(height: 25),
 
-                        // Buttons
+                        ///   BUTTONS
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -122,46 +228,53 @@ class _PendingBillsState extends State<PendingBills> {
                               onPressed: () => Navigator.pop(context),
                               child: const Text(
                                 "Cancel",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.grey,
-                                ),
+                                style: TextStyle(color: Colors.grey),
                               ),
                             ),
 
                             ElevatedButton.icon(
                               onPressed: () async {
-                                double entered =
-                                    double.tryParse(amountController.text) ?? 0;
-
-                                double actual =
-                                    ((bill['netTotal'] as num?) ?? 0)
-                                        .toDouble();
-
-                                if (entered == actual) {
-                                  Navigator.pop(context);
-                                  await markAsPaid(bill['id']);
+                                if (isFullPayment) {
+                                  if (entered == total) {
+                                    Navigator.pop(context);
+                                    await markAsPaid(bill['id']);
+                                  } else {
+                                    setState(() {
+                                      errorText = "Enter full amount!";
+                                    });
+                                  }
                                 } else {
-                                  setState(() {
-                                    errorText =
-                                        "Amount does not match bill amount!";
-                                  });
+                                  if (entered > 0 && entered < total) {
+                                    Navigator.pop(context);
+
+                                    // TODO: Save partial payment in DB
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text("Partial Payment Saved"),
+                                      ),
+                                    );
+                                  } else {
+                                    setState(() {
+                                      errorText = "Invalid partial amount!";
+                                    });
+                                  }
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 12,
-                                ),
+                                backgroundColor: isFullPayment
+                                    ? Colors.green
+                                    : Colors.orange,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              icon: const Icon(Icons.check,color: Colors.white,),
-                              label: const Text(
-                                "Confirm",
-                                style: TextStyle(fontSize: 15,color: Colors.white),
+                              icon: const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                              ),
+                              label: Text(
+                                isFullPayment ? "Confirm" : "Partial Pay",
+                                style: const TextStyle(color: Colors.white),
                               ),
                             ),
                           ],
@@ -249,7 +362,7 @@ class _PendingBillsState extends State<PendingBills> {
 
       body: Column(
         children: [
-          /// 🔹 TOP CARD (TOTAL PENDING)
+          ///   TOP CARD (TOTAL PENDING)
           Container(
             width: double.infinity,
             margin: const EdgeInsets.all(12),
@@ -279,7 +392,7 @@ class _PendingBillsState extends State<PendingBills> {
             ),
           ),
 
-          /// 🔹 SEARCH BAR
+          ///   SEARCH BAR
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: TextField(
@@ -299,7 +412,7 @@ class _PendingBillsState extends State<PendingBills> {
 
           const SizedBox(height: 10),
 
-          /// 🔹 LIST
+          ///   LIST
           Expanded(
             child: filteredList.isEmpty
                 ? const Center(child: Text("No Pending Bills"))
