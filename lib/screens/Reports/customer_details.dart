@@ -52,11 +52,14 @@ SELECT
   COUNT(*) as totalInvoices,
   SUM(netTotal) as totalSpent,
 
-  SUM(CASE 
-      WHEN paymentStatus = 'Pending' 
-      THEN netTotal 
-      ELSE 0 
-  END) as totalPending,
+SUM(
+  CASE 
+    WHEN paymentStatus = 'Payment Received' THEN 0
+    ELSE (netTotal - COALESCE(paidAmount, 0))
+  END
+) as totalPending,
+
+SUM(COALESCE(paidAmount, 0)) as totalPaid,
 
   MAX(invoiceDate) as lastDate
 
@@ -185,7 +188,7 @@ ORDER BY totalSpent DESC''');
       nextInvoice = int.parse(lastInvoice.first['invoiceNo'].toString()) + 1;
     }
 
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => BillScreen(
@@ -194,6 +197,9 @@ ORDER BY totalSpent DESC''');
         ),
       ),
     );
+    loadCustomers();
+    Navigator.pop(context);
+    showCustomerPopup(customer);
   }
 
   //    STAT CARD
@@ -253,13 +259,20 @@ ORDER BY totalSpent DESC''');
 
   void showCustomerPopup(Map<String, dynamic> cust) async {
     final db = await DatabaseHelper.instance.database;
-
     final invoices = await db.rawQuery(
       '''
       SELECT * FROM invoices WHERE receiverName = ?
     ''',
       [cust['receiverName']],
     );
+
+    bool hasPartial = invoices.any((inv) => inv['paymentStatus'] == "Partial");
+
+    double partialPaid = invoices
+        .where((inv) => inv['paymentStatus'] == "Partial")
+        .fold(0.0, (sum, inv) {
+          return sum + ((inv['paidAmount'] as num?) ?? 0);
+        });
 
     showModalBottomSheet(
       context: context,
@@ -340,12 +353,13 @@ ORDER BY totalSpent DESC''');
                               cust['totalPending'],
                               Colors.red,
                             ),
-                            _statCard(
-                              "Paid",
-                              ((cust['totalSpent'] ?? 0) -
-                                  (cust['totalPending'] ?? 0)),
-                              Colors.green,
-                            ),
+                            _statCard("Paid", cust['totalPaid'], Colors.green),
+                            if (hasPartial)
+                              _statCard(
+                                "Partially Paid",
+                                partialPaid,
+                                Colors.orange,
+                              ),
                           ],
                         ),
                       ),
@@ -434,9 +448,12 @@ ORDER BY totalSpent DESC''');
                                                   ),
                                               decoration: BoxDecoration(
                                                 color: isCopied
-                                                    ? const Color.fromARGB(255, 120, 189, 228).withOpacity(
-                                                        0.15,
-                                                      )
+                                                    ? const Color.fromARGB(
+                                                        255,
+                                                        120,
+                                                        189,
+                                                        228,
+                                                      ).withOpacity(0.15)
                                                     : Colors.transparent,
                                                 borderRadius:
                                                     BorderRadius.circular(6),
@@ -540,15 +557,55 @@ ORDER BY totalSpent DESC''');
                               return ListTile(
                                 title: Text("Invoice #${inv['invoiceNo']}"),
                                 subtitle: Text("₹ ${inv['netTotal']}"),
-                                trailing: Text(
-                                  (inv['paymentStatus'] as String?) ?? '',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: inv['paymentStatus'] == "Pending"
-                                        ? Colors.red
-                                        : Colors.green,
-                                  ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (inv['paymentStatus'] == "Partial") ...[
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            "₹ Paid: ${((inv['paidAmount'] as num?) ?? 0)}",
+                                            style: const TextStyle(
+                                              color: Colors.orange,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            "₹ Due: ${((inv['netTotal'] as num?) ?? 0) - ((inv['paidAmount'] as num?) ?? 0)}",
+                                            style: const TextStyle(
+                                              color: Colors.red,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+
+                                    Text(
+                                      (inv['paymentStatus'] ?? '') == "Pending"
+                                          ? "Pending"
+                                          : (inv['paymentStatus'] ?? '') ==
+                                                "Partial"
+                                          ? "Partial"
+                                          : "Paid",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: inv['paymentStatus'] == "Pending"
+                                            ? Colors.red
+                                            : inv['paymentStatus'] == "Partial"
+                                            ? Colors.orange
+                                            : Colors.green,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             },

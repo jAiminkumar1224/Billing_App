@@ -767,7 +767,7 @@ ORDER BY id DESC
                     ),
                     trailing: Text(
                       "₹ ${inv['netTotal']}",
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontWeight: FontWeight.bold,fontSize: 16),
                     ),
                   ),
                 );

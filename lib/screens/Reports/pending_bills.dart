@@ -39,7 +39,7 @@ class _PendingBillsState extends State<PendingBills> {
 
     bool hasPartial = previousPaid > 0;
 
-    bool isFullPayment = false;
+    bool isFullPayment =  !hasPartial;
 
     String errorText = "";
 
