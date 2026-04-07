@@ -11,8 +11,9 @@ import 'Reports/customer_details.dart';
 /// ================= SIDEBAR =================
 class AppSidebar extends StatelessWidget {
   final int selectedIndex;
+  final VoidCallback? onReturn;
 
-  const AppSidebar({super.key, required this.selectedIndex});
+  const AppSidebar({super.key, required this.selectedIndex, this.onReturn});
 
   Widget buildItem({
     required BuildContext context,
@@ -63,10 +64,14 @@ class AppSidebar extends StatelessWidget {
             icon: Icons.receipt_long,
             index: 0,
             onTap: () {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const BillScreen()),
-              );
+              ).then((_) {
+                 if (onReturn != null) {
+      onReturn!(); 
+    } 
+              });
             },
           ),
 
@@ -80,6 +85,35 @@ class AppSidebar extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const DataScreen()),
               );
             },
+          ),
+
+          const Spacer(),
+
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: InkWell(
+              onTap: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEAEA),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.logout,
+                  color: Color(0xFFDC2626),
+                  size: 22,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -238,16 +272,22 @@ ORDER BY invoiceDate DESC
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
-        title: const Text('Business Dashboard'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
       ),
 
       body: Row(
         children: [
-          const AppSidebar(selectedIndex: 1),
-
+          AppSidebar(
+            selectedIndex: 1,
+            onReturn: loadAllData, 
+          ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -255,74 +295,107 @@ ORDER BY invoiceDate DESC
                 children: [
                   Row(
                     children: [
-                      _card(
-                        "Revenue",
-                        "₹ $totalSales",
-                        Icons.currency_rupee,
-                        Colors.green,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SalesReportScreen(),
-                            ),
-                          ).then((_) {
-                            loadAllData();
-                          });
-                        },
+                      Expanded(
+                        child: _modernCard(
+                          title: "Revenue",
+                          value: "₹ $totalSales",
+                          color: Colors.green,
+                          icon: Icons.show_chart,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SalesReportScreen(),
+                              ),
+                            ).then((_) => loadAllData());
+                          },
+                        ),
                       ),
-                      _card(
-                        "Invoices",
-                        "$totalInvoices",
-                        Icons.receipt,
-                        Colors.blue,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AllInvoices(),
-                            ),
-                          ).then((_) {
-                            loadAllData();
-                          });
-                        },
+
+                      Expanded(
+                        child: _modernCard(
+                          title: "Invoices",
+                          value: "$totalInvoices",
+                          color: Colors.blue,
+                          icon: Icons.receipt_long,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AllInvoices(),
+                              ),
+                            ).then((_) => loadAllData());
+                          },
+                        ),
                       ),
                     ],
                   ),
 
+                  const SizedBox(height: 10),
+
                   Row(
                     children: [
-                      _card(
-                        "Outstanding",
-                        "₹ $pendingAmount",
-                        Icons.pending_actions,
-                        Colors.red,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const PendingBills(),
-                            ),
-                          ).then((_) {
-                            loadAllData();
-                          });
-                        },
+                      Expanded(
+                        child: _modernCard(
+                          title: "Outstanding",
+                          value: "₹ $pendingAmount",
+                          color: Colors.red,
+                          icon: Icons.warning_amber,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PendingBills(),
+                              ),
+                            ).then((_) => loadAllData());
+                          },
+                        ),
                       ),
-                      _card(
-                        "Clients",
-                        "$totalCustomers",
-                        Icons.people,
-                        Colors.purple,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const CustomerDetails(),
-                            ),
-                          ).then((_) {
-                            loadAllData();
-                          });
-                        },
+
+                      Expanded(
+                        child: _modernCard(
+                          title: "Clients",
+                          value: "$totalCustomers",
+                          color: Colors.purple,
+                          icon: Icons.people,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CustomerDetails(),
+                              ),
+                            ).then((_) => loadAllData());
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  /// ================= RECENT ACTIVITY ================
+                  const SizedBox(height: 10),
+
+                  ///  MAIN CONTENT AREA
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ///  LEFT SIDE (RECENT ACTIVITY)
+                      Expanded(flex: 2, child: _recentTable()),
+
+                      const SizedBox(width: 16),
+
+                      ///  RIGHT SIDE (EMPTY / FUTURE USE)
+                      Expanded(
+                        flex: 1,
+                        child: Container(
+                          height: 365,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Center(
+                            child: Text("Add Chart / Stats Here"),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -332,55 +405,63 @@ ORDER BY invoiceDate DESC
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    );
+  }
+
+  Widget _modernCard({
+    required String title,
+    required String value,
+    required Color color,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 6,
-              offset: const Offset(0, -2),
+              color: Colors.grey.shade200,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 140,
-              height: 44,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const BillScreen()),
-                  );
-                },
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('New Bill'),
+            /// TITLE
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
               ),
             ),
 
-            const SizedBox(width: 12),
+            const SizedBox(height: 10),
 
-            SizedBox(
-              width: 140,
-              height: 44,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (route) => false,
-                  );
-                },
-                icon: const Icon(Icons.logout, size: 18),
-                label: const Text('Logout'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFDC2626),
-                  foregroundColor: Colors.white,
-                ),
+            /// VALUE
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
+            ),
+
+            const SizedBox(height: 12),
+
+            /// ICON
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Icon(icon, color: color.withOpacity(0.7), size: 28),
             ),
           ],
         ),
@@ -388,64 +469,82 @@ ORDER BY invoiceDate DESC
     );
   }
 
-  Widget _card(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.all(6),
-          padding: const EdgeInsets.all(16),
-          decoration: _box(),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: 32),
-
-              const SizedBox(height: 10),
-
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color.fromARGB(221, 0, 0, 0),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ],
+  Widget _recentTable() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Recent Activity",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-        ),
+
+          const SizedBox(height: 12),
+
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columns: const [
+                DataColumn(label: Text("No.")),
+                DataColumn(label: Text("Invoice")),
+                DataColumn(label: Text("Client")),
+                DataColumn(label: Text("Date")),
+                DataColumn(label: Text("Amount")),
+                DataColumn(label: Text("Status")),
+              ],
+              rows: invoiceList.take(5).toList().asMap().entries.map((e) {
+                final index = e.key;
+                final invoice = e.value;
+                return DataRow(
+                  cells: [
+                    DataCell(Text("${index + 1}")),
+                    DataCell(Text(invoice['invoiceNo'].toString())),
+                    DataCell(Text(invoice['receiverName'].toString())),
+                    DataCell(Text(_formatDate(invoice['invoiceDate']))),
+                    DataCell(Text("₹ ${invoice['netTotal']}")),
+
+                    DataCell(
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _statusColor(invoice['paymentStatus']),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          invoice['paymentStatus'],
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  BoxDecoration _box() {
-    return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.shade300,
-          blurRadius: 6,
-          offset: const Offset(0, 3),
-        ),
-      ],
-    );
+  Color _statusColor(String status) {
+    if (status == "Payment Received") return Colors.green;
+    if (status == "Partial") return Colors.orange;
+    return Colors.red;
+  }
+
+  String _formatDate(String rawDate) {
+    final date = DateTime.parse(rawDate);
+    return "${date.day.toString().padLeft(2, '0')}/"
+        "${date.month.toString().padLeft(2, '0')}/"
+        "${date.year}";
   }
 }

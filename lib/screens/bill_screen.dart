@@ -24,8 +24,9 @@ class BillScreen extends StatefulWidget {
 
 class AppSidebar extends StatelessWidget {
   final int selectedIndex;
+   final VoidCallback? onReturn;
 
-  const AppSidebar({super.key, required this.selectedIndex});
+  const AppSidebar({super.key, required this.selectedIndex, this.onReturn});
 
   Widget buildItem({
     required BuildContext context,
@@ -76,10 +77,15 @@ class AppSidebar extends StatelessWidget {
             icon: Icons.receipt_long,
             index: 0,
             onTap: () {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const BillScreen()),
-              );
+              ).then((_) {
+                if (context.mounted) {
+                  (context as Element)
+                      .markNeedsBuild(); 
+                }
+              });
             },
           ),
 
