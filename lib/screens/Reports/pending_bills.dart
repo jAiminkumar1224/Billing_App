@@ -11,6 +11,7 @@ class PendingBills extends StatefulWidget {
 class _PendingBillsState extends State<PendingBills> {
   List<Map<String, dynamic>> pendingList = [];
   List<Map<String, dynamic>> filteredList = [];
+  List<double> payments = [];
 
   double totalPending = 0;
 
@@ -38,7 +39,7 @@ class _PendingBillsState extends State<PendingBills> {
 
     bool hasPartial = previousPaid > 0;
 
-    bool isFullPayment = !hasPartial;
+    bool isFullPayment = false;
 
     String errorText = "";
 
@@ -47,15 +48,22 @@ class _PendingBillsState extends State<PendingBills> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            double entered = double.tryParse(amountController.text) ?? 0;
-
             double remaining = total - previousPaid;
+
+            double totalPaidFromList = payments.fold(
+              0,
+              (sum, e) => sum + ((e['amount'] as num?) ?? 0),
+            );
 
             String paidBreakdown = payments.isEmpty
                 ? "₹ 0"
                 : payments
-                      .map((e) => "₹${(e['amount'] as num).toStringAsFixed(0)}")
-                      .join(" + ");
+                          .map(
+                            (e) =>
+                                "₹${(e['amount'] as num).toStringAsFixed(0)}",
+                          )
+                          .join(" + ") +
+                      " = ₹${totalPaidFromList.toStringAsFixed(0)}";
 
             return Center(
               child: ConstrainedBox(
@@ -83,9 +91,14 @@ class _PendingBillsState extends State<PendingBills> {
                                     ? []
                                     : [
                                         BoxShadow(
-                                          color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.5),
+                                          color: const Color.fromARGB(
+                                            255,
+                                            0,
+                                            0,
+                                            0,
+                                          ).withOpacity(0.5),
                                           blurRadius: 8,
-                                         // offset: const Offset(0, 3),
+                                          // offset: const Offset(0, 3),
                                         ),
                                       ],
                               ),
@@ -121,7 +134,7 @@ class _PendingBillsState extends State<PendingBills> {
                                               Icons.check,
                                               size: 18,
                                               color: isFullPayment
-                                                  ? Colors.white  
+                                                  ? Colors.white
                                                   : Colors.green,
                                             ),
                                           ),
@@ -218,52 +231,48 @@ class _PendingBillsState extends State<PendingBills> {
 
                             ElevatedButton(
                               onPressed: () async {
-                                if (isFullPayment) {
-                                  if (entered == total) {
-                                    await db.update(
-                                      'invoices',
-                                      {
-                                        'paidAmount': total,
-                                        'dueAmount': 0,
-                                        'paymentStatus': 'Payment Received',
-                                      },
-                                      where: 'id = ?',
-                                      whereArgs: [bill['id']],
-                                    );
-                                  } else {
+                                double entered =
+                                    double.tryParse(
+                                      amountController.text.trim(),
+                                    ) ??
+                                    0;
+
+                                if (entered <= 0) {
+                                  setState(() {
+                                    errorText = "Enter valid amount";
+                                  });
+                                  return;
+                                }
+
+                                if (entered > 0) {
+                                  double newPaid = previousPaid + entered;
+
+                                  if (newPaid > total) {
                                     setState(() {
-                                      errorText = "Enter full amount";
+                                      errorText = "Amount exceeds total";
                                     });
                                     return;
                                   }
-                                } else {
-                                  if (entered > 0 && entered <= remaining) {
-                                    await db.insert('payments', {
-                                      'invoiceId': bill['id'],
-                                      'amount': entered,
-                                    });
 
-                                    double newPaid = previousPaid + entered;
-                                    double newDue = total - newPaid;
+                                  await db.insert('payments', {
+                                    'invoiceId': bill['id'],
+                                    'amount': entered,
+                                  });
 
-                                    await db.update(
-                                      'invoices',
-                                      {
-                                        'paidAmount': newPaid,
-                                        'dueAmount': newDue,
-                                        'paymentStatus': newDue == 0
-                                            ? 'Payment Received'
-                                            : 'Partial',
-                                      },
-                                      where: 'id = ?',
-                                      whereArgs: [bill['id']],
-                                    );
-                                  } else {
-                                    setState(() {
-                                      errorText = "Invalid amount";
-                                    });
-                                    return;
-                                  }
+                                  double newDue = total - newPaid;
+
+                                  await db.update(
+                                    'invoices',
+                                    {
+                                      'paidAmount': newPaid,
+                                      'dueAmount': newDue,
+                                      'paymentStatus': newDue == 0
+                                          ? 'Payment Received'
+                                          : 'Partial',
+                                    },
+                                    where: 'id = ?',
+                                    whereArgs: [bill['id']],
+                                  );
                                 }
 
                                 Navigator.pop(context);

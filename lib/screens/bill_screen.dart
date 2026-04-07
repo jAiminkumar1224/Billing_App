@@ -278,6 +278,26 @@ class _BillScreenState extends State<BillScreen> {
     return int.tryParse(value)?.toString() ?? value;
   }
 
+  @override
+  void dispose() {
+    invoiceNoController.dispose();
+    stateController.dispose();
+    stateCodeController.dispose();
+    receiverStateCodeController.dispose();
+    receiverNameController.dispose();
+    receiverAddressController.dispose();
+    receiverGstinController.dispose();
+    receiverStateController.dispose();
+    contactNumberController.dispose();
+    whatsappNumberController.dispose();
+    emailController.dispose();
+    poNumberController.dispose();
+    discountController.dispose();
+    _itemScrollController.dispose();
+
+    super.dispose();
+  }
+
   Future<void> loadItems() async {
     final db = await DatabaseHelper.instance.database;
 
@@ -309,7 +329,7 @@ class _BillScreenState extends State<BillScreen> {
       "SELECT invoiceNo FROM invoices ORDER BY id DESC LIMIT 1",
     );
 
-    if (result.isNotEmpty) {
+    if (result.isNotEmpty && mounted) {
       setState(() {
         lastInvoiceNo = result.first['invoiceNo'].toString();
         showLastInvoice = true;
@@ -466,8 +486,6 @@ class _BillScreenState extends State<BillScreen> {
       ).showSnackBar(const SnackBar(content: Text("Fill required fields")));
       return;
     }
-
-
 
     final db = await DatabaseHelper.instance.database;
 
