@@ -268,7 +268,9 @@ class _PendingBillsState extends State<PendingBills> {
                                       'dueAmount': newDue,
                                       'paymentStatus': newDue == 0
                                           ? 'Payment Received'
-                                          : 'Partial',
+                                          : (newPaid == 0
+                                                ? 'Pending'
+                                                : 'Partial'),
                                     },
                                     where: 'id = ?',
                                     whereArgs: [bill['id']],
@@ -314,18 +316,23 @@ class _PendingBillsState extends State<PendingBills> {
       orderBy: 'id DESC',
     );
 
-    double total = 0;
-    for (var bill in data) {
-      double due =
-          ((bill['dueAmount'] as num?) ?? (bill['netTotal'] as num?) ?? 0)
-              .toDouble();
+    double totalPendingCalc = 0;
 
-      total += due;
+    for (var bill in data) {
+      double billTotal = ((bill['netTotal'] as num?) ?? 0).toDouble();
+      double paid = ((bill['paidAmount'] as num?) ?? 0).toDouble();
+
+      double due = billTotal - paid;
+
+      if (due > 0) {
+        totalPendingCalc += due;
+      }
     }
+
     setState(() {
       pendingList = data;
       filteredList = data;
-      totalPending = total;
+      totalPending = totalPendingCalc;
     });
   }
 
@@ -343,28 +350,6 @@ class _PendingBillsState extends State<PendingBills> {
       filteredList = results;
     });
   }
-
-  /// MARK BILL AS PAID
-  // Future<void> markAsPaid(int id) async {
-  //   final db = await DatabaseHelper.instance.database;
-
-  //   await db.insert('payments', {'invoiceId': bill['id'], 'amount': entered});
-
-  //   int updated = await db.update(
-  //     'invoices',
-  //     {'paymentStatus': 'Payment Received'},
-  //     where: 'id = ?',
-  //     whereArgs: [id],
-  //   );
-
-  //   if (updated > 0) {
-  //     await loadPending();
-
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(const SnackBar(content: Text("Bill moved to Sales")));
-  //   }
-  // }
 
   String formatDate(String? date) {
     if (date == null) return "";

@@ -117,7 +117,7 @@ class _DataScreenState extends State<DataScreen> {
     final db = await DatabaseHelper.instance.database;
 
     final data = await db.query('invoices', orderBy: 'invoiceDate DESC');
- 
+
     var totalResult = await db.rawQuery(
       "SELECT SUM(netTotal) as total FROM invoices WHERE paymentStatus = 'Payment Received'",
     );
@@ -127,14 +127,21 @@ class _DataScreenState extends State<DataScreen> {
         : (totalResult.first['total'] as num).toDouble();
 
     totalInvoices = data.length;
-   
-    var pendingResult = await db.rawQuery(
-      "SELECT SUM(COALESCE(dueAmount, netTotal)) as total FROM invoices WHERE paymentStatus != 'Payment Received'",
-    );
 
-    pendingAmount = pendingResult.first['total'] == null
-        ? 0
-        : (pendingResult.first['total'] as num).toDouble();
+    double totalPendingCalc = 0;
+
+    for (var bill in data) {
+      double total = ((bill['netTotal'] as num?) ?? 0).toDouble();
+      double paid = ((bill['paidAmount'] as num?) ?? 0).toDouble();
+
+      double remaining = total - paid;
+
+      if (remaining > 0) {
+        totalPendingCalc += remaining;
+      }
+    }
+
+    pendingAmount = totalPendingCalc;
 
     pendingList = await db.query(
       'invoices',
