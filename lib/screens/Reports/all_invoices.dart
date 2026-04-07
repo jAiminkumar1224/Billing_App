@@ -123,6 +123,9 @@ class _AllInvoicesState extends State<AllInvoices> {
     if (statusFilter != "All") {
       temp = temp.where((inv) => inv['paymentStatus'] == statusFilter).toList();
     }
+    if (statusFilter != "All") {
+      temp = temp.where((inv) => inv['paymentStatus'] == statusFilter).toList();
+    }
 
     setState(() {
       filteredList = temp;
@@ -137,249 +140,306 @@ class _AllInvoicesState extends State<AllInvoices> {
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
-          builder: (_) => Container(
-            height: MediaQuery.of(context).size.height * 0.85,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              children: [
-                /// 🔵 HEADER (SMART)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
-                    ),
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        inv['receiverName'] ?? "",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+          builder: (_) {
+            double total = (inv['netTotal'] ?? 0).toDouble();
+            double paid = (inv['paidAmount'] ?? 0).toDouble();
+            double due = total - paid;
+            {
+              return Container(
+                height: MediaQuery.of(context).size.height * 0.85,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+
+                child: Column(
+                  children: [
+                    ///  HEADER (SMART)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
+                        ),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
                         ),
                       ),
-
-                      const SizedBox(height: 10),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Column(
+                          Text(
+                            inv['receiverName'] ?? "",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
-                                "Invoice",
-                                style: TextStyle(color: Colors.white70),
+                              /// Invoice
+                              Column(
+                                children: [
+                                  const Text(
+                                    "Invoice",
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  Text(
+                                    "INV-${inv['invoiceNo']}",
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                "INV-${inv['invoiceNo']}",
-                                style: const TextStyle(color: Colors.white),
+
+                              /// Total
+                              Column(
+                                children: [
+                                  const Text(
+                                    "Total",
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  Text(
+                                    "₹ $total",
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              ),
+
+                              /// Paid
+                              Column(
+                                children: [
+                                  const Text(
+                                    "Paid",
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  Text(
+                                    "₹ $paid",
+                                    style: const TextStyle(
+                                      color: Colors.greenAccent,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              /// Due
+                              Column(
+                                children: [
+                                  const Text(
+                                    "Due",
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  Text(
+                                    "₹ $due",
+                                    style: const TextStyle(
+                                      color: Colors.orangeAccent,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              /// Status
+                              Column(
+                                children: [
+                                  const Text(
+                                    "Status",
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  Text(
+                                    inv['paymentStatus'] ?? "",
+                                    style: TextStyle(
+                                      color:
+                                          inv['paymentStatus'] ==
+                                              "Payment Received"
+                                          ? Colors.greenAccent
+                                          : inv['paymentStatus'] == "Partial"
+                                          ? Colors.orangeAccent
+                                          : Colors.redAccent,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                          Column(
-                            children: [
-                              const Text(
-                                "Total",
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                              Text(
-                                "₹ ${inv['netTotal']}",
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              const Text(
-                                "Status",
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                              Text(
-                                inv['paymentStatus'],
-                                style: TextStyle(
-                                  color:
-                                      inv['paymentStatus'] == "Payment Received"
-                                      ? Colors.greenAccent
-                                      : Colors.redAccent,
-                                ),
-                              ),
-                            ],
+
+                          const SizedBox(height: 8),
+
+                          Text(
+                            "Date: ${formatDate(inv['invoiceDate'])}",
+                            style: const TextStyle(color: Colors.white70),
                           ),
                         ],
                       ),
+                    ),
 
-                      const SizedBox(height: 8),
+                    /// 📄 BODY
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Items",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
 
-                      Text(
-                        "Date: ${formatDate(inv['invoiceDate'])}",
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                ),
+                            const SizedBox(height: 10),
 
-                /// 📄 BODY
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Items",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                            Expanded(
+                              child: FutureBuilder(
+                                future: DatabaseHelper.instance.database.then((
+                                  db,
+                                ) {
+                                  return db.query(
+                                    'invoice_items',
+                                    where: 'invoiceId = ?',
+                                    whereArgs: [inv['id']],
+                                  );
+                                }),
+                                builder: (context, snapshot) {
+                                  if (!snapshot.hasData) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
+
+                                  final items =
+                                      snapshot.data
+                                          as List<Map<String, dynamic>>;
+
+                                  return ListView.builder(
+                                    itemCount: items.length,
+                                    itemBuilder: (_, i) {
+                                      final item = items[i];
+
+                                      return Card(
+                                        elevation: 2,
+                                        margin: const EdgeInsets.symmetric(
+                                          vertical: 5,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        child: ListTile(
+                                          title: Text(item['itemName']),
+                                          subtitle: Text("Qty: ${item['qty']}"),
+                                          trailing: Text("₹ ${item['amount']}"),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                    ),
 
-                        const SizedBox(height: 10),
+                    ///  BUTTONS
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          actionBtn("Edit Bill", Icons.edit, () async {
+                            Navigator.pop(context);
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => BillScreen(
+                                  invoice: InvoiceModel(
+                                    id: inv['id'],
+                                    invoiceNo: inv['invoiceNo'],
+                                    invoiceDate: inv['invoiceDate'],
+                                    state: inv['state'],
+                                    stateCode: inv['stateCode'],
+                                    receiverName: inv['receiverName'],
+                                    receiverAddress: inv['receiverAddress'],
+                                    receiverGstin: inv['receiverGstin'],
+                                    receiverState: inv['receiverState'],
+                                    receiverStateCode:
+                                        inv['receiverStateCode'] ?? '',
+                                    poNumber: inv['poNumber'],
+                                    poDate: inv['poDate'],
+                                    subtotal: inv['subtotal'],
+                                    discount: inv['discount'],
+                                    netTotal: inv['netTotal'],
+                                    paymentStatus: inv['paymentStatus'],
+                                    contactNumber: inv['contactNumber'] ?? '',
+                                    whatsappNumber: inv['whatsappNumber'] ?? '',
+                                    email: inv['email'] ?? '',
+                                  ),
+                                ),
+                              ),
+                            );
 
-                        Expanded(
-                          child: FutureBuilder(
-                            future: DatabaseHelper.instance.database.then((db) {
-                              return db.query(
+                            if (result == true) loadInvoices();
+                          }, isEnabled: !isPaid),
+
+                          actionBtn(
+                            "Download PDF",
+                            Icons.picture_as_pdf,
+                            () async {
+                              showBottomIndicator("Generating PDF...");
+
+                              final db = await DatabaseHelper.instance.database;
+
+                              final itemsData = await db.query(
                                 'invoice_items',
                                 where: 'invoiceId = ?',
                                 whereArgs: [inv['id']],
                               );
-                            }),
-                            builder: (context, snapshot) {
-                              if (!snapshot.hasData) {
-                                return const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              }
 
-                              final items =
-                                  snapshot.data as List<Map<String, dynamic>>;
-
-                              return ListView.builder(
-                                itemCount: items.length,
-                                itemBuilder: (_, i) {
-                                  final item = items[i];
-
-                                  return Card(
-                                    elevation: 2,
-                                    margin: const EdgeInsets.symmetric(
-                                      vertical: 5,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: ListTile(
-                                      title: Text(item['itemName']),
-                                      subtitle: Text("Qty: ${item['qty']}"),
-                                      trailing: Text("₹ ${item['amount']}"),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                /// 🔘 BUTTONS
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      actionBtn("Edit Bill", Icons.edit, () async {
-                        Navigator.pop(context);
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BillScreen(
-                              invoice: InvoiceModel(
-                                id: inv['id'],
-                                invoiceNo: inv['invoiceNo'],
-                                invoiceDate: inv['invoiceDate'],
+                              await PdfService().downloadBill(
+                                invoiceNo: inv['invoiceNo'].toString(),
+                                invoiceDate: parseDate(inv['invoiceDate']),
                                 state: inv['state'],
                                 stateCode: inv['stateCode'],
+                                receiverStateCode: inv['receiverStateCode'],
+                                receiverState: inv['receiverState'],
                                 receiverName: inv['receiverName'],
                                 receiverAddress: inv['receiverAddress'],
                                 receiverGstin: inv['receiverGstin'],
-                                receiverState: inv['receiverState'],
-                                receiverStateCode:
-                                    inv['receiverStateCode'] ?? '',
                                 poNumber: inv['poNumber'],
-                                poDate: inv['poDate'],
-                                subtotal: inv['subtotal'],
-                                discount: inv['discount'],
+                                poDate: parseDate(inv['poDate']),
+                                items: itemsData,
+                                subTotal: inv['subtotal'],
+                                discountAmount: inv['discount'],
                                 netTotal: inv['netTotal'],
-                                paymentStatus: inv['paymentStatus'],
-                                contactNumber: inv['contactNumber'] ?? '',
-                                whatsappNumber: inv['whatsappNumber'] ?? '',
-                                email: inv['email'] ?? '',
-                              ),
-                            ),
+                                discountPercentText: "0",
+                              );
+
+                              hideBottomIndicator();
+                            },
                           ),
-                        );
 
-                        if (result == true) loadInvoices();
-                      }, isEnabled: !isPaid),
+                          actionBtn("Print Bill", Icons.print, () async {
+                            showBottomIndicator("Preparing Print...");
 
-                      actionBtn("Download PDF", Icons.picture_as_pdf, () async {
-                        showBottomIndicator("Generating PDF...");
+                            await printInvoiceFromDb(inv);
 
-                        final db = await DatabaseHelper.instance.database;
-
-                        final itemsData = await db.query(
-                          'invoice_items',
-                          where: 'invoiceId = ?',
-                          whereArgs: [inv['id']],
-                        );
-
-                        await PdfService().downloadBill(
-                          invoiceNo: inv['invoiceNo'].toString(),
-                          invoiceDate: parseDate(inv['invoiceDate']),
-                          state: inv['state'],
-                          stateCode: inv['stateCode'],
-                          receiverStateCode: inv['receiverStateCode'],
-                          receiverState: inv['receiverState'],
-                          receiverName: inv['receiverName'],
-                          receiverAddress: inv['receiverAddress'],
-                          receiverGstin: inv['receiverGstin'],
-                          poNumber: inv['poNumber'],
-                          poDate: parseDate(inv['poDate']),
-                          items: itemsData,
-                          subTotal: inv['subtotal'],
-                          discountAmount: inv['discount'],
-                          netTotal: inv['netTotal'],
-                          discountPercentText: "0",
-                        );
-
-                        hideBottomIndicator();
-                      }),
-                      
-                      actionBtn("Print Bill", Icons.print, () async {
-                        showBottomIndicator("Preparing Print...");
-
-                        await printInvoiceFromDb(inv);
-
-                        hideBottomIndicator();
-                      }),
-                    ],
-                  ),
+                            hideBottomIndicator();
+                          }),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              );
+            }
+          },
         );
       },
       child: Container(
@@ -417,11 +477,13 @@ class _AllInvoicesState extends State<AllInvoices> {
             const SizedBox(height: 5),
 
             Text(
-              inv['paymentStatus'] ?? "",
+              inv['paymentStatus'],
               style: TextStyle(
                 color: inv['paymentStatus'] == "Payment Received"
-                    ? Colors.green
-                    : Colors.red,
+                    ? Colors.greenAccent
+                    : inv['paymentStatus'] == "Partial"
+                    ? Colors.orangeAccent
+                    : Colors.redAccent,
               ),
             ),
           ],
@@ -544,6 +606,7 @@ class _AllInvoicesState extends State<AllInvoices> {
                 filterButton("All"),
                 filterButton("Payment Received"),
                 filterButton("Pending"),
+                filterButton("Partial"),
               ],
             ),
 
