@@ -883,7 +883,7 @@ class _BillScreenState extends State<BillScreen> {
         appBar: AppBar(
           backgroundColor: const Color(0xFF1E3A8A),
           foregroundColor: Colors.white,
-          title: const Text('Billing Screen'),
+          title: const Text('Billing Section'),
 
           actions: [
             TextButton(

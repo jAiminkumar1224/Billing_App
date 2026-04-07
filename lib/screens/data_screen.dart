@@ -256,7 +256,7 @@ ORDER BY invoiceDate DESC
                   Row(
                     children: [
                       _card(
-                        "Total Sales",
+                        "Revenue",
                         "₹ $totalSales",
                         Icons.currency_rupee,
                         Colors.green,
@@ -293,7 +293,7 @@ ORDER BY invoiceDate DESC
                   Row(
                     children: [
                       _card(
-                        "Pending",
+                        "Outstanding",
                         "₹ $pendingAmount",
                         Icons.pending_actions,
                         Colors.red,
@@ -309,7 +309,7 @@ ORDER BY invoiceDate DESC
                         },
                       ),
                       _card(
-                        "Customers",
+                        "Clients",
                         "$totalCustomers",
                         Icons.people,
                         Colors.purple,
@@ -403,15 +403,27 @@ ORDER BY invoiceDate DESC
           padding: const EdgeInsets.all(16),
           decoration: _box(),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 30),
+              Icon(icon, color: color, size: 32),
+
+              const SizedBox(height: 10),
+
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color.fromARGB(221, 0, 0, 0),
+                ),
+              ),
+
               const SizedBox(height: 8),
-              Text(title),
-              const SizedBox(height: 5),
+
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
