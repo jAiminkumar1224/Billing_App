@@ -20,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -47,6 +47,12 @@ class DatabaseHelper {
           FOREIGN KEY (invoiceId) REFERENCES invoices(id) ON DELETE CASCADE
         )
       ''');
+    }
+
+    if (oldVersion < 5) {
+      await db.execute(
+        "ALTER TABLE invoices ADD COLUMN createdAt TEXT DEFAULT CURRENT_TIMESTAMP",
+      );
     }
   }
 

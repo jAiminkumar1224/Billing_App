@@ -24,7 +24,7 @@ class BillScreen extends StatefulWidget {
 
 class AppSidebar extends StatelessWidget {
   final int selectedIndex;
-   final VoidCallback? onReturn;
+  final VoidCallback? onReturn;
 
   const AppSidebar({super.key, required this.selectedIndex, this.onReturn});
 
@@ -82,8 +82,7 @@ class AppSidebar extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const BillScreen()),
               ).then((_) {
                 if (context.mounted) {
-                  (context as Element)
-                      .markNeedsBuild(); 
+                  (context as Element).markNeedsBuild();
                 }
               });
             },
@@ -536,7 +535,11 @@ class _BillScreenState extends State<BillScreen> {
 
     if (widget.invoice == null) {
       if (widget.invoice == null) {
-        savedInvoiceId = await db.insert('invoices', invoice.toMap());
+        final invoiceMap = invoice.toMap();
+
+        invoiceMap['createdAt'] = DateTime.now().toString();
+
+        savedInvoiceId = await db.insert('invoices', invoiceMap);
       } else {
         //  UPDATE
         savedInvoiceId = widget.invoice!.id;

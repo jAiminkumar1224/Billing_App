@@ -68,9 +68,9 @@ class AppSidebar extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (_) => const BillScreen()),
               ).then((_) {
-                 if (onReturn != null) {
-      onReturn!(); 
-    } 
+                if (onReturn != null) {
+                  onReturn!();
+                }
               });
             },
           ),
@@ -150,7 +150,10 @@ class _DataScreenState extends State<DataScreen> {
   Future<void> loadAllData() async {
     final db = await DatabaseHelper.instance.database;
 
-    final data = await db.query('invoices', orderBy: 'invoiceDate DESC');
+    final data = await db.query(
+      'invoices',
+      orderBy: 'CAST(invoiceNo AS INTEGER) DESC',
+    );
 
     var totalResult = await db.rawQuery(
       "SELECT SUM(netTotal) as total FROM invoices WHERE paymentStatus = 'Payment Received'",
@@ -274,6 +277,7 @@ ORDER BY invoiceDate DESC
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text(
@@ -284,10 +288,7 @@ ORDER BY invoiceDate DESC
 
       body: Row(
         children: [
-          AppSidebar(
-            selectedIndex: 1,
-            onReturn: loadAllData, 
-          ),
+          AppSidebar(selectedIndex: 1, onReturn: loadAllData),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -378,25 +379,9 @@ ORDER BY invoiceDate DESC
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ///  LEFT SIDE (RECENT ACTIVITY)
                       Expanded(flex: 2, child: _recentTable()),
 
                       const SizedBox(width: 16),
-
-                      ///  RIGHT SIDE (EMPTY / FUTURE USE)
-                      Expanded(
-                        flex: 1,
-                        child: Container(
-                          height: 365,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: const Center(
-                            child: Text("Add Chart / Stats Here"),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ],
@@ -471,6 +456,7 @@ ORDER BY invoiceDate DESC
 
   Widget _recentTable() {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -487,8 +473,9 @@ ORDER BY invoiceDate DESC
 
           const SizedBox(height: 12),
 
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          SizedBox(
+            height: 300,
+            width: double.infinity,
             child: DataTable(
               columns: const [
                 DataColumn(label: Text("No.")),
@@ -506,7 +493,7 @@ ORDER BY invoiceDate DESC
                     DataCell(Text("${index + 1}")),
                     DataCell(Text(invoice['invoiceNo'].toString())),
                     DataCell(Text(invoice['receiverName'].toString())),
-                    DataCell(Text(_formatDate(invoice['invoiceDate']))),
+                    DataCell(Text(_formatDate(invoice['createdAt']))),
                     DataCell(Text("₹ ${invoice['netTotal']}")),
 
                     DataCell(
@@ -541,10 +528,26 @@ ORDER BY invoiceDate DESC
     return Colors.red;
   }
 
-  String _formatDate(String rawDate) {
-    final date = DateTime.parse(rawDate);
-    return "${date.day.toString().padLeft(2, '0')}/"
-        "${date.month.toString().padLeft(2, '0')}/"
-        "${date.year}";
+  String _formatDate(String rawDateTime) {
+  final date = DateTime.parse(rawDateTime);
+
+  int hour = date.hour;
+  String period = "AM";
+
+  if (hour >= 12) {
+    period = "PM";
+    if (hour > 12) hour -= 12;
   }
+
+  if (hour == 0) {
+    hour = 12;
+  }
+
+  String minute = date.minute.toString().padLeft(2, '0');
+
+  return "${date.day.toString().padLeft(2, '0')}/"
+      "${date.month.toString().padLeft(2, '0')}/"
+      "${date.year} "
+      "$hour:$minute $period";
+}
 }
