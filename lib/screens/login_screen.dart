@@ -1,3 +1,4 @@
+import 'package:billing_app/database/database_helper.dart';
 import 'package:flutter/material.dart';
 import 'bill_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +18,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+
+    /// Uncomment the line below to clear all data from the database (for testing purposes) 
+
+   // DatabaseHelper.instance.clearAllData();
 
     _loadSavedPassword();
 

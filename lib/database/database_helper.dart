@@ -29,9 +29,12 @@ class DatabaseHelper {
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 3) {
       await db.execute(
-          "ALTER TABLE invoices ADD COLUMN paidAmount REAL DEFAULT 0");
+        "ALTER TABLE invoices ADD COLUMN paidAmount REAL DEFAULT 0",
+      );
+
       await db.execute(
-          "ALTER TABLE invoices ADD COLUMN dueAmount REAL DEFAULT 0");
+        "ALTER TABLE invoices ADD COLUMN dueAmount REAL DEFAULT 0",
+      );
     }
 
     if (oldVersion < 4) {
@@ -103,6 +106,27 @@ CREATE TABLE payments (
   FOREIGN KEY (invoiceId) REFERENCES invoices(id) ON DELETE CASCADE
 )
 ''');
+  }
+
+  /// ==========================================================
+  /// TEMPORARY METHOD : DELETE ALL DATABASE DATA
+  /// ----------------------------------------------------------
+  /// This will remove:
+  /// 1. All Payments
+  /// 2. All Invoice Items
+  /// 3. All Invoices
+  ///
+  /// USE ONLY FOR TESTING / DEVELOPMENT
+  /// REMOVE AFTER ONE TIME USE
+  /// ==========================================================
+  Future<void> clearAllData() async {
+    final db = await database;
+
+    await db.delete('payments');
+    await db.delete('invoice_items');
+    await db.delete('invoices');
+
+    print("ALL DATABASE DATA CLEARED SUCCESSFULLY");
   }
 
   Future<List<Map<String, dynamic>>> getSalesRegisterItems() async {
