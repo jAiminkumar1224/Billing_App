@@ -39,7 +39,7 @@ class _PendingBillsState extends State<PendingBills> {
 
     bool hasPartial = previousPaid > 0;
 
-    bool isFullPayment =  !hasPartial;
+    bool isFullPayment = !hasPartial;
 
     String errorText = "";
 
@@ -124,12 +124,15 @@ class _PendingBillsState extends State<PendingBills> {
                                     children: [
                                       Expanded(
                                         child: GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
                                           onTap: () {
                                             setState(() {
                                               isFullPayment = true;
                                             });
                                           },
-                                          child: Center(
+                                          child: Container(
+                                            height: double.infinity,
+                                            alignment: Alignment.center,
                                             child: Icon(
                                               Icons.check,
                                               size: 18,
@@ -140,14 +143,18 @@ class _PendingBillsState extends State<PendingBills> {
                                           ),
                                         ),
                                       ),
+
                                       Expanded(
                                         child: GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
                                           onTap: () {
                                             setState(() {
                                               isFullPayment = false;
                                             });
                                           },
-                                          child: Center(
+                                          child: Container(
+                                            height: double.infinity,
+                                            alignment: Alignment.center,
                                             child: Icon(
                                               Icons.percent,
                                               size: 18,
