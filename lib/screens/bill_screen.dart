@@ -24,9 +24,13 @@ class BillScreen extends StatefulWidget {
 
 class AppSidebar extends StatelessWidget {
   final int selectedIndex;
-  final VoidCallback? onReturn;
+  final Future<bool> Function()? onBackPressed;
 
-  const AppSidebar({super.key, required this.selectedIndex, this.onReturn});
+  const AppSidebar({
+    super.key,
+    required this.selectedIndex,
+    this.onBackPressed,
+  });
 
   Widget buildItem({
     required BuildContext context,
@@ -92,11 +96,15 @@ class AppSidebar extends StatelessWidget {
             context: context,
             icon: Icons.storage,
             index: 1,
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const DataScreen()),
-              );
+            onTap: () async {
+              final shouldLeave = await onBackPressed?.call() ?? true;
+
+              if (shouldLeave) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DataScreen()),
+                );
+              }
             },
           ),
         ],
@@ -232,6 +240,7 @@ class _BillScreenState extends State<BillScreen> {
 
       loadItems();
     }
+
     addListeners();
 
     invoiceNoController.addListener(() {
@@ -669,67 +678,127 @@ class _BillScreenState extends State<BillScreen> {
   Future<void> resetAll() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Material(
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: const [
-                      Icon(Icons.warning_amber_rounded, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text(
-                        'Reset Invoice',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            width: 700,
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// Warning Icon Badge
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    shape: BoxShape.circle,
                   ),
-
-                  const SizedBox(height: 12),
-
-                  const Text(
-                    'This will clear all entered invoice details. This action cannot be undone.',
-                    style: TextStyle(color: Colors.black54),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Color(0xFFF59E0B),
+                    size: 34,
                   ),
+                ),
 
-                  const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
+                /// Title
+                const Text(
+                  "Unsaved Changes",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                /// Subtitle
+                const Text(
+                  "You have unsaved invoice data.\nPlease save or discard before leaving.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF6B7280),
+                    height: 1.6,
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                /// Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(context, false);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          side: const BorderSide(color: Colors.red),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text('Reset'),
+                        child: const Text(
+                          "Discard",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+
+                    const SizedBox(width: 14),
+
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await saveBillToDatabase();
+                          Navigator.pop(context, true);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          "Reset & New",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
 
     if (confirm != true) return;
@@ -763,7 +832,7 @@ class _BillScreenState extends State<BillScreen> {
   }
 
   Future<void> logout() async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showDialog<String>(
       context: context,
       builder: (_) => Center(
         child: ConstrainedBox(
@@ -836,63 +905,145 @@ class _BillScreenState extends State<BillScreen> {
   }
 
   Future<bool> _onBackPressed() async {
-    bool exit = false;
+    if (isSaved) return true;
 
-    await showDialog(
+    if (!hasUnsavedData()) return true;
+
+    final result = await showDialog<String>(
       context: context,
       barrierDismissible: true,
       builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-
-          // 🔥 TITLE WITH CLOSE ICON
-          title: Row(
-            children: [
-              const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-              const SizedBox(width: 8),
-              const Expanded(child: Text("Exit Bill")),
-
-              InkWell(
-                onTap: () {
-                  Navigator.pop(context);
-                },
-                child: const Icon(Icons.close, size: 20),
-              ),
-            ],
-          ),
-
-          content: const Text(
-            "Your data will be lost.\nDo you want to continue?",
-            style: TextStyle(fontSize: 14),
-          ),
-
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                exit = true;
-              },
-              child: const Text("Discard", style: TextStyle(color: Colors.red)),
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            width: 700,
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                ),
+              ],
             ),
-          ],
+
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFF7ED),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Color(0xFFF59E0B),
+                    size: 34,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                const Text(
+                  "Unsaved Changes",
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  "You have unsaved invoice data.\nWould you like to save before leaving?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey,
+                    height: 1.5,
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(context, "discard");
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          side: const BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          "Discard",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 14),
+
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await saveBillToDatabase();
+                          Navigator.pop(context, "save");
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          "Save & Exit",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
 
-    return exit;
+    if (result == "discard") return true;
+
+    if (result == "save" && isSaved) return true;
+
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: _onBackPressed,
+      
+
       child: Scaffold(
+          backgroundColor: const Color(0xFFF5F6FA),
         appBar: AppBar(
-          backgroundColor: const Color(0xFF1E3A8A),
-          foregroundColor: Colors.white,
-          title: const Text('Billing Section'),
+          backgroundColor: const Color.fromARGB(20, 15, 57, 225),
+          title: const Text(
+            'Billing Section',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
 
           actions: [
             TextButton(
@@ -904,7 +1055,7 @@ class _BillScreenState extends State<BillScreen> {
 
         body: Row(
           children: [
-            const AppSidebar(selectedIndex: 0),
+            AppSidebar(selectedIndex: 0, onBackPressed: _onBackPressed),
 
             Expanded(
               child: Padding(
@@ -912,6 +1063,9 @@ class _BillScreenState extends State<BillScreen> {
                 child: Column(
                   children: [
                     buildHeaderInputs(),
+
+                    Divider(),
+
                     buildItemHeader(),
 
                     Expanded(
@@ -954,7 +1108,7 @@ class _BillScreenState extends State<BillScreen> {
         bottomNavigationBar: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color.fromARGB(20, 15, 57, 225),
             boxShadow: [
               BoxShadow(
                 // ignore: deprecated_member_use
@@ -977,7 +1131,7 @@ class _BillScreenState extends State<BillScreen> {
                   icon: const Icon(Icons.refresh, size: 18),
                   label: const Text('Reset'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E3A8A), // Deep Blue
+                    backgroundColor: const Color(0xFF64748B), // Soft Gray
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     textStyle: const TextStyle(
@@ -999,7 +1153,7 @@ class _BillScreenState extends State<BillScreen> {
                   icon: const Icon(Icons.logout, size: 18),
                   label: const Text('Logout'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFDC2626), // Soft Red
+                    backgroundColor: const Color(0xFFEF4444), // Soft Red
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     textStyle: const TextStyle(
@@ -1290,6 +1444,7 @@ class _BillScreenState extends State<BillScreen> {
         children: const [
           SizedBox(
             width: 60,
+            height: 20,
             child: Center(
               child: Text(
                 'Sr. No.',
@@ -1347,7 +1502,7 @@ class _BillScreenState extends State<BillScreen> {
             width: 48,
             child: Center(
               child: Text(
-                'Delete\nItem',
+                'Delete',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
@@ -1673,5 +1828,23 @@ class _BillScreenState extends State<BillScreen> {
         ),
       ],
     );
+  }
+
+  bool hasUnsavedData() {
+    return invoiceNoController.text.trim().isNotEmpty ||
+        invoiceDate != null ||
+        stateController.text.trim().isNotEmpty ||
+        stateCodeController.text.trim().isNotEmpty ||
+        receiverNameController.text.trim().isNotEmpty ||
+        receiverAddressController.text.trim().isNotEmpty ||
+        receiverGstinController.text.trim().isNotEmpty ||
+        receiverStateController.text.trim().isNotEmpty ||
+        receiverStateCodeController.text.trim().isNotEmpty ||
+        contactNumberController.text.trim().isNotEmpty ||
+        whatsappNumberController.text.trim().isNotEmpty ||
+        emailController.text.trim().isNotEmpty ||
+        poNumberController.text.trim().isNotEmpty ||
+        poDate != null ||
+        items.isNotEmpty;
   }
 }
