@@ -50,9 +50,13 @@ class DatabaseHelper {
     }
 
     if (oldVersion < 5) {
-      await db.execute(
-        "ALTER TABLE invoices ADD COLUMN createdAt TEXT DEFAULT CURRENT_TIMESTAMP",
-      );
+      try {
+        await db.execute(
+          "ALTER TABLE invoices ADD COLUMN createdAt TEXT DEFAULT CURRENT_TIMESTAMP",
+        );
+      } catch (e) {
+        print("createdAt column already exists");
+      }
     }
   }
 
@@ -125,15 +129,15 @@ CREATE TABLE payments (
   /// USE ONLY FOR TESTING / DEVELOPMENT
   /// REMOVE AFTER ONE TIME USE
   /// ==========================================================
-  Future<void> clearAllData() async {
-    final db = await database;
+  // Future<void> clearAllData() async {
+  //   final db = await database;
 
-    await db.delete('payments');
-    await db.delete('invoice_items');
-    await db.delete('invoices');
+  //   await db.delete('payments');
+  //   await db.delete('invoice_items');
+  //   await db.delete('invoices');
 
-    print("ALL DATABASE DATA CLEARED SUCCESSFULLY");
-  }
+  //   print("ALL DATABASE DATA CLEARED SUCCESSFULLY");
+  // }
 
   Future<List<Map<String, dynamic>>> getSalesRegisterItems() async {
     final db = await database;

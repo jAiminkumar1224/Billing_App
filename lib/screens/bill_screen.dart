@@ -593,7 +593,7 @@ class _BillScreenState extends State<BillScreen> {
     ).showSnackBar(const SnackBar(content: Text("Bill Saved Successfully")));
 
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (widget.invoice != null && mounted) {
+      if (mounted) {
         Navigator.pop(context, true);
       }
     });

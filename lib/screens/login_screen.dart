@@ -22,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
     /// Uncomment the line below to clear all data from the database (for testing purposes) 
     /// Also uncomment Imort statement of database_helper.dart
 
-   // DatabaseHelper.instance.clearAllData();
+  //  DatabaseHelper.instance.clearAllData();
 
     _loadSavedPassword();
 
