@@ -74,12 +74,12 @@ class PdfService {
                   children: [
                     fixedInfoRow(
                       'Invoice No : $invoiceNo',
-                      'GSTIN : 24FRLPP4169J1Z6',
+                      'GSTIN : 24***********Z6',
                       'Original',
                     ),
                     fixedInfoRow(
                       'Date : ${formatDate(invoiceDate)}',
-                      'PAN : FRLPP4169J',
+                      'PAN : FR******9J',
                       'Duplicate',
                     ),
                     fixedInfoRow(
@@ -311,12 +311,12 @@ class PdfService {
                   children: [
                     fixedInfoRow(
                       'Invoice No : $invoiceNo',
-                      'GSTIN : 24FRLPP4169J1Z6',
+                      'GSTIN : 24***********Z6',
                       'Original',
                     ),
                     fixedInfoRow(
                       'Date : ${formatDate(invoiceDate)}',
-                      'PAN : FRLPP4169J',
+                      'PAN : FR******9J',
                       'Duplicate',
                     ),
                     fixedInfoRow(
@@ -556,7 +556,7 @@ pw.Widget bankAndSignatureSection() {
                             ),
                             pw.SizedBox(width: 10, child: pw.Text(':')),
                             pw.Text(
-                              '50200113846171',
+                              '50**********71',
                               style: pw.TextStyle(fontSize: 10),
                             ),
                           ],
@@ -573,7 +573,7 @@ pw.Widget bankAndSignatureSection() {
                             ),
                             pw.SizedBox(width: 10, child: pw.Text(':')),
                             pw.Text(
-                              'HDFC0002828',
+                              'HDFC*****28',
                               style: pw.TextStyle(fontSize: 10),
                             ),
                           ],
@@ -709,7 +709,7 @@ pw.Widget bankAndSignatureSection() {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text(
-                'Subject to Valsad Jurisdiction',
+                'Subject to State Jurisdiction',
                 style: pw.TextStyle(fontSize: 10),
               ),
               pw.Text('[E&OE]', style: pw.TextStyle(fontSize: 10)),
