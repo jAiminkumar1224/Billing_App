@@ -1,6 +1,7 @@
 import 'package:billing_app/models/invoice_item_model.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -14,17 +15,19 @@ class DatabaseHelper {
     return _database!;
   }
 
-  Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
 
-    return await openDatabase(
-      path,
-      version: 5,
-      onCreate: _createDB,
-      onUpgrade: _onUpgrade,
-    );
-  }
+Future<Database> _initDB(String filePath) async {
+  final appDir = await getApplicationSupportDirectory();
+
+  final path = join(appDir.path, filePath);
+
+  return await openDatabase(
+    path,
+    version: 5,
+    onCreate: _createDB,
+    onUpgrade: _onUpgrade,
+  );
+}
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 3) {
