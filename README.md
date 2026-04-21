@@ -1,7 +1,8 @@
-# Flutter Billing App
+# 🧾 Flutter Billing App
 
-A simple **billing and invoice management application** built with **Flutter** and **SQLite**.
-This app helps small businesses generate invoices, manage pending payments, track sales, and print bills.
+A modern **Billing & Invoice Management System** built using **Flutter (Desktop )** and **SQLite**.
+
+This application is designed for small businesses to efficiently create invoices, track payments, generate reports, and print professional bills — all offline.
 
 ---
 
@@ -10,21 +11,22 @@ This app helps small businesses generate invoices, manage pending payments, trac
 * 📄 Create and manage invoices
 * 🧾 Item-based billing system
 * ⏳ Track **Pending Bills**
-* 💰 Mark bills as **Paid**
-* 📊 **Sales Report Dashboard**
-* 🔍 Search invoices by customer or invoice number
-* 📅 Filter sales by **Weekly, Monthly, Yearly, or Custom date range**
-* 🖨 Generate and print **PDF bills**
-* 💾 Local data storage using **SQLite**
+* 💰 Mark invoices as **Paid**
+* 📊 Advanced **Sales Reports Dashboard**
+* 🔍 Search invoices (Customer / Invoice Number)
+* 📅 Filter sales by **Weekly / Monthly / Yearly / Custom Range**
+* 🖨 Generate & print **PDF invoices**
+* 💾 Offline storage using **SQLite**
+* 🖥 Desktop support (**Windows .exe build**)
 
 ---
 
 ## 🛠 Tech Stack
 
-* **Flutter** – UI Framework
-* **Dart** – Programming Language
-* **SQLite** – Local Database
-* **PDF Service** – Invoice generation
+* **Flutter** – Cross-platform UI framework
+* **Dart** – Programming language
+* **SQLite** – Local database
+* **PDF & Printing** – Invoice generation
 
 ---
 
@@ -36,17 +38,32 @@ lib/
 ├── database/
 │   └── database_helper.dart
 │
+├── models/
+│   ├── invoice_model.dart
+│   └── invoice_item_model.dart
+│
 ├── screens/
+│   ├── Reports/
+│   │   ├── all_invoices.dart
+│   │   ├── customer_details.dart
+│   │   ├── pending_bills.dart
+│   │   └── sales_report_screen.dart
+│   │
 │   ├── bill_screen.dart
 │   ├── data_screen.dart
-│   ├── login_screen.dart
-│   ├── pending_bills.dart
-│   └── sales_report_screen.dart
+│   └── login_screen.dart
 │
 ├── services/
-│   └── pdf_service.dart
+│   ├── pdf_service.dart
+│   ├── print_bill.dart
+│   └── sales_report_pdf.dart
+│
+├── widgets/
 │
 └── main.dart
+```
+
+---
 
 ## 🚀 Getting Started
 
@@ -56,7 +73,7 @@ lib/
 git clone https://github.com/your-username/flutter-billing-app.git
 ```
 
-### 2️⃣ Go to project folder
+### 2️⃣ Navigate to project
 
 ```
 cd flutter-billing-app
@@ -68,59 +85,86 @@ cd flutter-billing-app
 flutter pub get
 ```
 
-### 4️⃣ Run the application
+---
 
+## ▶️ Run the Application
+
+### 📱 Android 
 ```
 flutter run
 ```
+
+### 🖥 Windows Desktop
+
+```
+flutter config --enable-windows-desktop
+flutter run -d windows
+```
+
+---
+
+## 📦 Build Windows EXE
+
+```
+flutter build windows
+```
+
+Output location:
+
+```
+build/windows/runner/Release/
+```
+
+👉 You can convert this into a setup installer using tools like **Inno Setup**.
+
+---
+
+## 📥 Download (Executable)
+
+You can download the latest `.exe` from the **Releases** section of this repository.
 
 ---
 
 ## 📸 Screenshots
 
-Billing Page
+### Billing Page
 
-<img width="1919" height="1021" alt="image" src="https://github.com/user-attachments/assets/54c5425e-3c73-4be1-9e93-bce464e8e7c1" />
+<img width="1919" height="1021" alt="Billing" src="https://github.com/user-attachments/assets/54c5425e-3c73-4be1-9e93-bce464e8e7c1" />
 
-Data Page
+### Data Page
 
-<img width="1919" height="1018" alt="image" src="https://github.com/user-attachments/assets/c7922e24-0e1b-42b4-9ef6-5d0bb38172a7" />
+<img width="1919" height="1018" alt="Data" src="https://github.com/user-attachments/assets/c7922e24-0e1b-42b4-9ef6-5d0bb38172a7" />
+
+---
+
+## 💼 Real-World Use Case
+
+This application helps small businesses:
+
+* Replace manual billing systems
+* Reduce calculation errors
+* Maintain digital transaction history
+* Generate instant sales reports
+* Print professional invoices
 
 ---
 
 ## 📌 Future Improvements
 
 * Customer management module
-* Dashboard analytics
 * GST calculation support
-* Cloud backup
-* Multi-user login system
+* Cloud backup / sync
+* Multi-user authentication
+* Advanced analytics dashboard
 
 ---
 
 ## 👨‍💻 Author
 
-**Jaimin Patel**
+**Jaiminkumar Patel**
 
 ---
 
 ## 📜 License
 
 This project is open-source and available under the **MIT License**.
-
-# billing_app
-
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
